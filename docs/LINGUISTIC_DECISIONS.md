@@ -5,12 +5,14 @@ in graduate-admissions interviews.
 
 ## 1. Task definition
 
-We classify product reviews as **positive** or **negative** (binary).
+We classify product reviews as **positive**, **negative**, or **neutral**.
 
-**Why not Neutral?** Some reference Daraz files include Neutral, but our
-shippable curated set is binary, and merging Neutral without a shared annotation
-guide would mix incompatible label definitions. Neutral rows are excluded if the
-optional reference-preparation script is used.
+**Neutral policy:** Curated Neutral rows use a simple product-review guide
+(mixed, average, or factual with no clear praise/complaint). Optional reference
+CSVs may still drop Neutral when preparing *binary-only* external test files.
+On older binary model artifacts, low calibrated confidence can surface as
+`neutral` so sparse inputs (including unseen Urdu-script tokens) are not forced
+into positive/negative.
 
 ## 2. What we clean
 
@@ -19,7 +21,8 @@ optional reference-preparation script is used.
 | Lowercasing | Reduces spelling sparsity for Latin-script text |
 | URL / email / @mention removal | Social and listing noise, not polarity |
 | Keep hashtag *words* | Product tags can carry sentiment-bearing tokens |
-| Strip most punctuation | TF-IDF tokens stay readable; punctuation rarely helps bag-of-ngrams |
+| Keep Arabic / Urdu letters | Nastaliq reviews must not be wiped empty by Latin-only filters |
+| Strip most punctuation / emoji | TF-IDF tokens stay readable; punctuation rarely helps bag-of-ngrams |
 | Whitespace normalization | Stable tokenization |
 
 ## 3. What we deliberately keep
@@ -28,7 +31,8 @@ optional reference-preparation script is used.
 |-----|----------|-----|
 | English negation | not, no | Flips polarity (*good* vs *not good*) |
 | Roman Urdu negation | nahi, nahin, mat, na | Central to the research question |
-| Contrast | but, lekin, magar | Second clause often carries the reviewer's verdict |
+| Urdu-script negation | نہیں and related cues in source text | Kept when present in Nastaliq reviews |
+| Contrast | but, lekin, magar, لیکن, مگر | Second clause often carries the reviewer's verdict |
 | Intensifiers | bohat, very | Strengthens polarity |
 
 **Contrast with Reference 1:** their stopword list removes `nahi`, `nahin`, and

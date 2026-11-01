@@ -86,6 +86,26 @@ def test_unicode_input():
     assert "good" in out
 
 
+def test_urdu_script_preserved():
+    out = clean_text("یہ پروڈکٹ بہت اچھی ہے")
+    assert "پروڈکٹ" in out or "اچھی" in out
+    assert out.strip() != ""
+
+
+def test_urdu_contrast_preserved():
+    out = clean_text("اچھا ہے لیکن کوالٹی خراب ہے")
+    assert "لیکن" in out
+    assert "__contrast__" in out
+    assert out.count("خراب") >= 3
+
+
+def test_mixed_latin_and_urdu():
+    out = clean_text("Quality اچھی hai but delivery late")
+    assert "quality" in out
+    assert "اچھی" in out
+    assert "but" in out
+
+
 def test_repeated_whitespace():
     assert clean_text("too    many     spaces") == "too many spaces"
 

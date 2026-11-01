@@ -37,7 +37,7 @@ Core package: `src/` (`data_loader`, `preprocessing`, `train`, `evaluate`, `pred
 | **Primary (shipped)** | `data/raw/bilingual_product_reviews.csv` | Original curated reviews for this project; MIT with the code |
 | Size | 160 rows | 79 positive, 81 negative |
 | Languages | english, roman_urdu, code_mixed | Product-review style |
-| Labels | **binary** only | Neutral not supported in the deliverable |
+| Labels | positive / negative / **neutral** | Curated set includes Neutral + Urdu-script rows |
 
 **Important:** Metrics on this small set demonstrate the pipeline. They are **not** large-scale benchmarks.
 

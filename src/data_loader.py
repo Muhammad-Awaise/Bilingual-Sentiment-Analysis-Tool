@@ -14,6 +14,7 @@ from src.config import (
     DEFAULT_RAW_CSV,
     LABEL_COLUMN,
     LABEL_NEGATIVE,
+    LABEL_NEUTRAL,
     LABEL_POSITIVE,
     LANGUAGE_COLUMN,
     RANDOM_SEED,
@@ -21,7 +22,7 @@ from src.config import (
     TEST_SIZE,
     TEXT_COLUMN,
 )
-from src.preprocessing import clean_text
+from src.preprocessing import clean_text, contains_urdu_script
 
 
 class DatasetError(ValueError):
@@ -33,6 +34,8 @@ _LABEL_ALIASES = {
     "positive": LABEL_POSITIVE,
     "neg": LABEL_NEGATIVE,
     "negative": LABEL_NEGATIVE,
+    "neu": LABEL_NEUTRAL,
+    "neutral": LABEL_NEUTRAL,
 }
 
 # Lightweight cues for restoring language tags on expanded corpora
@@ -105,14 +108,18 @@ def infer_language(text: Any) -> str:
     """
     Heuristic language tag for rows lacking an annotation.
 
-    Returns english | roman_urdu | code_mixed | unknown.
+    Returns english | roman_urdu | code_mixed | urdu | unknown.
     Conservative: prefers code_mixed when both cue sets fire.
+    Urdu (Arabic) script is tagged as ``urdu``.
     """
     if text is None or (isinstance(text, float) and pd.isna(text)):
         return "unknown"
     raw = str(text).strip().lower()
     if not raw:
         return "unknown"
+    if contains_urdu_script(raw):
+        # Mixed Nastaliq + Latin still tagged urdu for slice reporting
+        return "urdu"
     tokens = set(re.findall(r"[a-z']+", raw))
     if not tokens:
         return "unknown"
@@ -136,7 +143,7 @@ def infer_language(text: Any) -> str:
 
 
 def normalize_label(value: Any) -> str | None:
-    """Map common label spellings to positive/negative; else None."""
+    """Map common label spellings to positive/negative/neutral; else None."""
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
     key = str(value).strip().lower()
@@ -205,7 +212,7 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def validate_reviews_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Drop invalid rows; keep only supported binary labels; require non-empty text."""
+    """Drop invalid rows; keep only supported labels; require non-empty text."""
     if df is None or len(df) == 0:
         raise DatasetError("Dataset has no rows.")
 
@@ -239,8 +246,8 @@ def validate_reviews_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     if working[LABEL_COLUMN].nunique() < 2:
         raise DatasetError(
-            "Dataset must contain at least two classes (positive and negative) "
-            "after cleaning."
+            "Dataset must contain at least two sentiment classes "
+            "(e.g. positive and negative) after cleaning."
         )
 
     return working

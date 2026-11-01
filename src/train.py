@@ -18,9 +18,11 @@ from sklearn.svm import LinearSVC
 
 from src.config import (
     CV_FOLDS,
+    DEFAULT_RAW_CSV,
     EXPANDED_TRAIN_CSV,
     HOLDOUT_SPLIT_PATH,
     LABEL_COLUMN,
+    LABEL_NEUTRAL,
     LANGUAGE_COLUMN,
     MAX_FEATURES,
     MODEL_ARTIFACT_PATH,
@@ -45,6 +47,35 @@ from src.data_loader import (
     stratified_split,
 )
 from src.preprocessing import clean_text
+
+
+def _augment_with_curated_urdu_and_neutral(df):
+    """
+    When training on the expanded binary CSV, also fold in curated rows that
+    carry Neutral labels or Urdu-script text so those classes/features exist.
+    """
+    import pandas as pd
+
+    if not DEFAULT_RAW_CSV.exists():
+        return df
+    try:
+        curated = load_reviews_csv(DEFAULT_RAW_CSV)
+    except DatasetError:
+        return df
+
+    mask = (curated[LABEL_COLUMN] == LABEL_NEUTRAL) | (
+        curated[LANGUAGE_COLUMN].astype(str).str.lower() == "urdu"
+    )
+    extra = curated.loc[mask]
+    if extra.empty:
+        return df
+
+    merged = pd.concat([df, extra], ignore_index=True)
+    merged["_dedupe"] = (
+        merged[TEXT_COLUMN].astype(str).str.strip().str.lower()
+    )
+    merged = merged.drop_duplicates(subset=["_dedupe"], keep="first")
+    return merged.drop(columns=["_dedupe"]).reset_index(drop=True)
 
 
 def build_pipeline(
@@ -77,7 +108,8 @@ def build_pipeline(
         base = LogisticRegression(
             max_iter=2000,
             C=C,
-            solver="liblinear",
+            # lbfgs supports 3-class (pos/neu/neg); liblinear does not
+            solver="lbfgs",
             random_state=RANDOM_SEED,
             class_weight="balanced",
         )
@@ -189,6 +221,11 @@ def train_and_save(
     """
     resolved_data = Path(data_path) if data_path else resolve_default_train_csv()
     df = load_reviews_csv(resolved_data)
+    # Expanded set is binary Latin-heavy; merge curated Neutral + Urdu-script rows.
+    if resolved_data.resolve() == EXPANDED_TRAIN_CSV.resolve() or (
+        data_path is None and EXPANDED_TRAIN_CSV.exists()
+    ):
+        df = _augment_with_curated_urdu_and_neutral(df)
     if write_processed:
         prepare_processed(df)
 

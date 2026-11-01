@@ -11,11 +11,14 @@ import pandas as pd
 
 from src.config import (
     LABEL_NEGATIVE,
+    LABEL_NEUTRAL,
+    LABEL_ORDER,
     LABEL_POSITIVE,
     LIMITATIONS_BLURB,
     MAX_BATCH_ROWS,
     MODEL_ARTIFACT_PATH,
     MODEL_NAME,
+    NEUTRAL_CONFIDENCE_MAX,
     SUPPORTED_LABELS,
 )
 from src.preprocessing import clean_text, is_effectively_empty
@@ -76,6 +79,33 @@ def _score_note(payload: dict[str, Any]) -> str:
     )
 
 
+def _model_classes(pipeline) -> list[str]:
+    classes = getattr(pipeline, "classes_", None)
+    if classes is None:
+        return []
+    return [str(c) for c in classes]
+
+
+def _apply_neutral_if_uncertain(
+    prediction: str,
+    model_score: float | None,
+    pipeline,
+) -> str:
+    """
+    Keep trained neutral predictions. On older binary artifacts, map low
+    max-probability scores to neutral so mixed / Urdu-script / sparse inputs
+    are not forced into positive or negative.
+    """
+    pred = str(prediction)
+    if pred == LABEL_NEUTRAL:
+        return LABEL_NEUTRAL
+    if LABEL_NEUTRAL in _model_classes(pipeline):
+        return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
+    if model_score is not None and float(model_score) < NEUTRAL_CONFIDENCE_MAX:
+        return LABEL_NEUTRAL
+    return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
+
+
 def predict_one(
     text: Any,
     artifact_path: str | Path | None = None,
@@ -99,12 +129,20 @@ def predict_one(
     pipeline = payload["pipeline"]
     model_name = payload.get("model_name", MODEL_NAME)
 
-    pred = pipeline.predict([text])[0]  # preprocessor runs inside vectorizer
+    pred = str(pipeline.predict([text])[0])  # preprocessor runs inside vectorizer
     if pred not in SUPPORTED_LABELS:
-        # Guard against unexpected label encoding
-        pred = LABEL_POSITIVE if str(pred) in {"1", "pos", LABEL_POSITIVE} else LABEL_NEGATIVE
+        # Guard against unexpected label encoding on older artifacts
+        if pred in {"1", "pos", LABEL_POSITIVE}:
+            pred = LABEL_POSITIVE
+        elif pred in {"0", "neg", LABEL_NEGATIVE}:
+            pred = LABEL_NEGATIVE
+        elif pred in {"neu", LABEL_NEUTRAL}:
+            pred = LABEL_NEUTRAL
+        else:
+            pred = LABEL_NEUTRAL
 
     scores = _decision_score(pipeline, [text])
+    pred = _apply_neutral_if_uncertain(pred, scores[0], pipeline)
     return {
         "text": text,
         "cleaned_text": cleaned,
@@ -155,7 +193,15 @@ def predict_batch(
         preds = pipeline.predict(valid_raw)
         sc = _decision_score(pipeline, valid_raw)
         for idx, p, s in zip(valid_indices, preds, sc):
-            predictions[idx] = str(p)
+            pred = str(p)
+            if pred not in SUPPORTED_LABELS:
+                if pred in {"1", "pos", LABEL_POSITIVE}:
+                    pred = LABEL_POSITIVE
+                elif pred in {"0", "neg", LABEL_NEGATIVE}:
+                    pred = LABEL_NEGATIVE
+                else:
+                    pred = LABEL_NEUTRAL
+            predictions[idx] = _apply_neutral_if_uncertain(pred, s, pipeline)
             scores[idx] = s
 
     rows = []
@@ -206,12 +252,17 @@ def sentiment_summary(predictions: pd.Series | list[str]) -> pd.DataFrame:
         return pd.DataFrame(columns=["sentiment", "count", "percentage"])
     counts = series.value_counts()
     total = int(counts.sum())
-    rows = [
-        {
-            "sentiment": label,
-            "count": int(counts.get(label, 0)),
-            "percentage": round(100.0 * int(counts.get(label, 0)) / total, 2),
-        }
-        for label in (LABEL_NEGATIVE, LABEL_POSITIVE)
-    ]
+    rows = []
+    for label in LABEL_ORDER:
+        count = int(counts.get(label, 0))
+        # Omit empty neutral so binary-only batches stay two-row summaries
+        if label == LABEL_NEUTRAL and count == 0:
+            continue
+        rows.append(
+            {
+                "sentiment": label,
+                "count": count,
+                "percentage": round(100.0 * count / total, 2),
+            }
+        )
     return pd.DataFrame(rows)

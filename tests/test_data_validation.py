@@ -21,7 +21,9 @@ from src.data_loader import (
 def test_normalize_label_aliases():
     assert normalize_label("POS") == "positive"
     assert normalize_label("Negative") == "negative"
-    assert normalize_label("neutral") is None
+    assert normalize_label("neutral") == "neutral"
+    assert normalize_label("neu") == "neutral"
+    assert normalize_label("mixed") is None
 
 
 def test_required_columns(synthetic_csv: Path):
@@ -46,12 +48,13 @@ def test_empty_dataset(tmp_path: Path):
 def test_unsupported_labels_dropped(tmp_path: Path):
     p = tmp_path / "mixed.csv"
     p.write_text(
-        "text,label\ngood,positive\nbad,negative\nmeh,neutral\n",
+        "text,label\ngood,positive\nbad,negative\nmeh,neutral\nweird,unknown\n",
         encoding="utf-8",
     )
     df = load_reviews_csv(p)
-    assert set(df[LABEL_COLUMN]) <= {"positive", "negative"}
-    assert "neutral" not in set(df[LABEL_COLUMN])
+    assert set(df[LABEL_COLUMN]) <= {"positive", "negative", "neutral"}
+    assert "unknown" not in set(df[LABEL_COLUMN])
+    assert "neutral" in set(df[LABEL_COLUMN])
 
 
 def test_missing_text_handled(tmp_path: Path):
@@ -80,7 +83,7 @@ def test_split_no_leakage(synthetic_csv: Path):
 
 def test_validate_needs_two_classes():
     df = pd.DataFrame({"text": ["a", "b"], "label": ["positive", "positive"]})
-    with pytest.raises(DatasetError, match="two classes"):
+    with pytest.raises(DatasetError, match="at least two"):
         validate_reviews_dataframe(df)
 
 
@@ -93,6 +96,10 @@ def test_infer_language_roman_urdu():
 
 def test_infer_language_english():
     assert infer_language("This product is very good and the quality is great") == "english"
+
+
+def test_infer_language_urdu_script():
+    assert infer_language("یہ پروڈکٹ بہت اچھی ہے") == "urdu"
 
 
 def test_load_infers_language_when_missing(tmp_path: Path):

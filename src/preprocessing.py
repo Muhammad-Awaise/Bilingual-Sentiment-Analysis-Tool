@@ -4,8 +4,9 @@ Shared text preprocessing for training and inference.
 Design goals (see docs/LINGUISTIC_DECISIONS.md):
 - Handle null / empty / non-string input safely
 - Normalize noise (URLs, mentions, excess punctuation) conservatively
-- PRESERVE negation and contrast markers (not, no, nahi, nahin, but, lekin, ...)
+- PRESERVE negation and contrast markers (not, no, nahi, nahin, نہیں, but, lekin, لیکن, ...)
 - Apply a *closed-set* Roman Urdu negation spelling map (nahin → nahi, …)
+- Keep Urdu (Arabic-script) letters so Nastaliq reviews are not wiped empty
 - Lightly emphasize contrast verdict clauses for bag-of-ngrams models
 - Do NOT strip a large stopword list that would erase polarity cues
 """
@@ -18,11 +19,21 @@ from typing import Any
 # Patterns compiled once
 _URL_RE = re.compile(r"https?://\S+|www\.\S+", re.IGNORECASE)
 _MENTION_RE = re.compile(r"@\w+")
-_HASHTAG_RE = re.compile(r"#(\w+)")
+_HASHTAG_RE = re.compile(r"#(\w+)", re.UNICODE)
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
-_WHITESPACE_RE = re.compile(r"\s+")
-# Keep letters (Latin + common accents), digits (for model numbers), apostrophes, spaces
-_NON_TEXT_RE = re.compile(r"[^a-z0-9'\s]+")
+_WHITESPACE_RE = re.compile(r"\s+", re.UNICODE)
+# Keep Latin letters/digits/apostrophe AND Arabic / Urdu script letters & marks.
+# Strips emoji and most punctuation while preserving Nastaliq review text.
+_NON_TEXT_RE = re.compile(
+    r"[^a-z0-9'\s"
+    r"\u0600-\u06FF"  # Arabic
+    r"\u0750-\u077F"  # Arabic Supplement
+    r"\u08A0-\u08FF"  # Arabic Extended-A
+    r"\uFB50-\uFDFF"  # Arabic Presentation Forms-A
+    r"\uFE70-\uFEFF"  # Arabic Presentation Forms-B
+    r"]+",
+    re.UNICODE,
+)
 
 # Closed-set informal Roman Urdu negation spellings → canonical "nahi"
 # Intentionally narrow: does not invent broad phonetic normalization.
@@ -37,7 +48,11 @@ _NEGATION_SPELLING_MAP = {
     "nhin": "nahi",
 }
 
-_CONTRAST_RE = re.compile(r"\b(but|lekin|magar|however|though)\b")
+# Latin + Urdu-script contrast cues (word boundaries via Unicode-aware \b)
+_CONTRAST_RE = re.compile(
+    r"(?<!\w)(but|lekin|magar|however|though|لیکن|مگر|پر)(?!\w)",
+    re.UNICODE,
+)
 
 
 def _canonicalize_negation_spellings(text: str) -> str:
@@ -74,7 +89,7 @@ def clean_text(text: Any) -> str:
     Clean a single review for vectorization.
 
     Returns an empty string for missing / non-string / whitespace-only input.
-    Output is lowercase with normalized whitespace.
+    Latin text is lowercased; Urdu-script letters are preserved.
     """
     if text is None:
         return ""
@@ -114,3 +129,15 @@ def preprocess_texts(texts) -> list[str]:
 def is_effectively_empty(text: Any) -> bool:
     """True if cleaning would yield an empty string."""
     return clean_text(text) == ""
+
+
+def contains_urdu_script(text: Any) -> bool:
+    """True if the string contains Arabic/Urdu script letters."""
+    if not isinstance(text, str) or not text:
+        return False
+    return bool(
+        re.search(
+            r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]",
+            text,
+        )
+    )

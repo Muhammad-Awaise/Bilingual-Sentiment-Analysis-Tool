@@ -219,7 +219,8 @@ def sidebar_status() -> dict | None:
 def page_single(payload: dict) -> None:
     st.header("Single review prediction")
     st.write(
-        "Enter an English, Roman Urdu, or code-mixed product review. "
+        "Enter an English, Roman Urdu, Urdu-script, or code-mixed product review. "
+        "Labels are positive, negative, or neutral. "
         "Predictions are heuristic classifications, not definitive readings of intent."
     )
     text = st.text_area(
@@ -231,13 +232,20 @@ def page_single(payload: dict) -> None:
     examples = {
         "English positive": "Excellent product quality and fast delivery.",
         "Roman Urdu negative": "Product acha nahi hai bilkul bekaar.",
+        "Neutral (mixed)": "Product theek hai na bohat acha na bura.",
         "Code-mixed contrast": "Product acha hai lekin quality kharab hai",
+        "Urdu positive": "یہ پروڈکٹ بہت اچھی ہے، کوالٹی زبردست ہے۔",
+        "Urdu negative": "یہ پروڈکٹ بالکل بیکار ہے، ایک دن میں ٹوٹ گیا۔",
+        "Urdu neutral": "پروڈکٹ ٹھیک ہے، نہ بہت اچھا نہ برا۔",
     }
-    cols = st.columns(len(examples))
-    for col, (label, sample) in zip(cols, examples.items()):
-        if col.button(label):
-            st.session_state["single_review_input"] = sample
-            st.rerun()
+    items = list(examples.items())
+    for row_start in range(0, len(items), 4):
+        chunk = items[row_start : row_start + 4]
+        cols = st.columns(len(chunk))
+        for col, (label, sample) in zip(cols, chunk):
+            if col.button(label, key=f"ex_{label}"):
+                st.session_state["single_review_input"] = sample
+                st.rerun()
 
     if st.button("Analyze sentiment", type="primary"):
         try:
@@ -262,6 +270,11 @@ def page_single(payload: dict) -> None:
     sentiment = result["prediction"]
     if sentiment == "positive":
         st.success(f"Predicted sentiment: **{sentiment}**")
+    elif sentiment == "neutral":
+        st.info(
+            f"Predicted sentiment: **{sentiment}** "
+            "(mixed / factual tone, or low model confidence)"
+        )
     else:
         st.error(f"Predicted sentiment: **{sentiment}**")
 
@@ -516,10 +529,15 @@ def page_evaluation() -> None:
         )
         st.dataframe(counts_df, use_container_width=True, hide_index=True)
         fig_c, ax_c = plt.subplots(figsize=(10, 3.2))
-        bar_colors = [
-            "#c62828" if "negative" in str(s).lower() else "#2e7d32"
-            for s in counts_df["Sentiment"]
-        ]
+        bar_colors = []
+        for s in counts_df["Sentiment"]:
+            key = str(s).lower()
+            if "negative" in key:
+                bar_colors.append("#c62828")
+            elif "neutral" in key:
+                bar_colors.append("#546e7a")
+            else:
+                bar_colors.append("#2e7d32")
         y_pos = list(range(len(counts_df)))
         vals = counts_df["Count"].tolist()
         ax_c.barh(y_pos, vals, color=bar_colors, height=0.55)
@@ -581,30 +599,26 @@ that only “works on English adjectives” is not answering the linguistic prob
     with st.expander("1. What is sentiment analysis in this project?", expanded=True):
         st.markdown(
             """
-Sentiment analysis here is a **supervised binary text classification** task:
-map a review string to one of two labels — **positive** or **negative**.
+Sentiment analysis here is a **supervised text classification** task:
+map a review string to **positive**, **negative**, or **neutral**
+(neutral covers mixed/factual tone and, on older binary models, low-confidence cases).
 
 #### What the label means
 The label is a **corpus annotation convention**, not a claim about the writer’s
 inner state. Two humans can disagree on mixed reviews
 (*I like the design but I am not happy with the battery*). We treat disagreement
-as a known limit of binary annotation, not as “model failure” alone.
+as a known limit of annotation, not as “model failure” alone.
 
 #### What this project is *not*
 - Not full semantic parsing or dialogue understanding
 - Not emotion recognition / psychology measurement
 - Not sarcasm detection as a dedicated task
-- Not a three-class (positive / **neutral** / negative) system
 
-#### Why binary (and why Neutral is deferred)
-Some Daraz-style corpora include **Neutral**. Combining Neutral across sources
-without a shared annotation guide mixes incompatible definitions (e.g. “mixed,”
-“factual,” “mild,” “unknown”). For a defensible four-day research deliverable we:
-1. keep **one** label inventory (positive / negative)
-2. drop Neutral when optional reference preparation is used
-3. document Neutral as future work needing an annotation guide
-
-That choice is a **linguistics + methodology** decision, not only an engineering shortcut.
+#### Neutral and Urdu script
+Curated Neutral rows follow a simple guide: average, factual, or mixed with no
+clear praise/complaint. **Urdu-script (نستعلیق)** letters are preserved in
+preprocessing so those reviews are not wiped empty. Optional external
+reference scripts may still drop Neutral when building binary-only test CSVs.
 """
         )
 

@@ -33,16 +33,21 @@ MODEL_COMPARISON_PATH = REPORTS_DIR / "model_comparison.md"
 TRAIN_META_PATH = REPORTS_DIR / "train_meta.json"
 HOLDOUT_SPLIT_PATH = REPORTS_DIR / "holdout_split.joblib"
 
-# Labels — binary classification only for this deliverable
+# Labels — positive / negative / neutral (neutral includes low-confidence abstention
+# on older binary artifacts; trained 3-class models predict neutral directly)
 LABEL_POSITIVE = "positive"
 LABEL_NEGATIVE = "negative"
-SUPPORTED_LABELS = frozenset({LABEL_POSITIVE, LABEL_NEGATIVE})
-LABEL_ORDER = [LABEL_NEGATIVE, LABEL_POSITIVE]
+LABEL_NEUTRAL = "neutral"
+SUPPORTED_LABELS = frozenset({LABEL_POSITIVE, LABEL_NEGATIVE, LABEL_NEUTRAL})
+LABEL_ORDER = [LABEL_NEGATIVE, LABEL_NEUTRAL, LABEL_POSITIVE]
+
+# When a binary artifact has no neutral class, map low max-probability to neutral.
+NEUTRAL_CONFIDENCE_MAX = 0.58
 
 # Column names used in curated / processed data
 TEXT_COLUMN = "text"
 LABEL_COLUMN = "label"
-LANGUAGE_COLUMN = "language"  # english | roman_urdu | code_mixed | unknown
+LANGUAGE_COLUMN = "language"  # english | roman_urdu | code_mixed | urdu | unknown
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
@@ -63,7 +68,9 @@ LIMITATIONS_BLURB = (
     "This model uses bag-of-ngrams features. It does not truly understand meaning, "
     "sarcasm, or speaker intent. When calibration is enabled, scores are "
     "sigmoid-calibrated class probabilities — still approximate, not certainty. "
-    "Negation, code-switching, and informal Roman Urdu spelling can still cause errors."
+    "Negation, code-switching, informal Roman Urdu spelling, and Urdu-script "
+    "reviews can still cause errors. Neutral may mean mixed/factual tone or "
+    "low model confidence — not a guaranteed human Neutral annotation."
 )
 
 
