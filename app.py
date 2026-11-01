@@ -220,7 +220,8 @@ def page_single(payload: dict) -> None:
     st.header("Single review prediction")
     st.write(
         "Enter an English, Roman Urdu, Urdu-script, or code-mixed product review. "
-        "Labels are positive, negative, or neutral. "
+        "Labels are **positive**, **negative**, or **neutral**, driven by polarity "
+        "cues and word intensity (e.g. *bilkul bekaar* / *بہت اچھی*). "
         "Predictions are heuristic classifications, not definitive readings of intent."
     )
     text = st.text_area(

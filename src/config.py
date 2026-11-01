@@ -41,8 +41,11 @@ LABEL_NEUTRAL = "neutral"
 SUPPORTED_LABELS = frozenset({LABEL_POSITIVE, LABEL_NEGATIVE, LABEL_NEUTRAL})
 LABEL_ORDER = [LABEL_NEGATIVE, LABEL_NEUTRAL, LABEL_POSITIVE]
 
-# When a binary artifact has no neutral class, map low max-probability to neutral.
-NEUTRAL_CONFIDENCE_MAX = 0.58
+# Legacy binary artifacts only: map very low max-probability to neutral.
+# Multiclass models use trained Neutral + a tight margin check instead.
+NEUTRAL_CONFIDENCE_MAX = 0.50
+NEUTRAL_MARGIN_MAX = 0.08
+NEUTRAL_MULTICLASS_FLOOR = 0.42
 
 # Column names used in curated / processed data
 TEXT_COLUMN = "text"

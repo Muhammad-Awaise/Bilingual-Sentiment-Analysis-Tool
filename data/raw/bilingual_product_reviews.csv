@@ -201,3 +201,43 @@ Product received as described nothing amazing,neutral,code_mixed
 نہ خوش نہ ناخوش بس چلے گا,neutral,urdu
 اوسط معیار ہے نہ تعریف نہ شکایت,neutral,urdu
 ڈیلیوری وقت پر ہوئی پروڈکٹ عام سا ہے,neutral,urdu
+یہ پروڈکٹ بالکل بیکار ہے کوالٹی خراب ہے اور ایک دن میں ٹوٹ گیا,negative,urdu
+یہ پروڈکٹ بالکل بیکار ہے کوالٹی خراب ہے,negative,urdu
+بالکل بیکار مال ہے ایک دن میں ٹوٹ گیا,negative,urdu
+کوالٹی خراب ہے اور پروڈکٹ ٹوٹ گیا,negative,urdu
+بہت برا تجربہ رہا بالکل بیکار,negative,urdu
+خراب کوالٹی جعلی مال مت خریدنا,negative,urdu
+ڈیلیوری بہت دیر سے ہوئی باکس بھی خراب,negative,urdu
+میں اس خریداری سے بالکل خوش نہیں,negative,urdu
+پیسے ضائع ہوئے کوالٹی بہت بری تھی,negative,urdu
+سائز بالکل غلط آیا واپس کرنا پڑا,negative,urdu
+یہ پروڈکٹ بہت اچھا ہے میں خوش ہوں,positive,urdu
+کوالٹی زبردست ہے بالکل درست آیا,positive,urdu
+بہت اچھی کوالٹی پیکنگ مضبوط تھی,positive,urdu
+سیلر بہت اچھا تھا جلدی ڈیلیور کیا,positive,urdu
+میں بہت خوش ہوں سفارش کرتا ہوں,positive,urdu
+صوتی معیار زبردست ہے قیمت مناسب,positive,urdu
+مواد بہت نرم ہے رنگ پیارا ہے,positive,urdu
+پراڈکٹ اچھا ہے بیٹری بھی بہترین,positive,urdu
+پروڈکٹ ٹھیک ہے عام سا تجربہ,neutral,urdu
+نہ اچھا نہ برا بس اوسط معیار,neutral,urdu
+کچھ خاص نہیں عام چیز ہے,neutral,urdu
+تحفظات نہیں شکایات بھی نہیں عام,neutral,urdu
+کام چل رہا ہے جذباتی رائے نہیں,neutral,urdu
+Average product nothing special just okay,neutral,english
+It is fine for the price no strong feelings,neutral,english
+Neither impressed nor disappointed usable item,neutral,english
+Packaging was normal product matches description only,neutral,english
+Bohat average hai na zabardast na bekaar,neutral,roman_urdu
+Theek thaak product hai bas chalega,neutral,roman_urdu
+Kuch khas nahi ordinary quality hai,neutral,roman_urdu
+Na positive na negative bas normal item,neutral,code_mixed
+Quality theek hai nothing amazing though,neutral,code_mixed
+Bilkul bekaar product toot gaya ek din mein,negative,roman_urdu
+Quality bohat kharab hai bilkul waste,negative,roman_urdu
+Bohat intense negative experience bekaar maal,negative,roman_urdu
+Yeh lene ke qabil nahi quality buri hai,negative,roman_urdu
+Bohat zabardast product bilkul perfect hai,positive,roman_urdu
+Mein bohat khush hun quality excellent hai,positive,roman_urdu
+Absolutely love this highly recommended,positive,english
+Extremely poor quality totally useless,negative,english

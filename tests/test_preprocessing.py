@@ -28,7 +28,9 @@ def test_english_text():
 
 def test_roman_urdu_text():
     out = clean_text("Yeh Product Bohat Acha Hai")
-    assert out == "yeh product bohat acha hai"
+    assert "yeh" in out and "product" in out
+    assert "acha" in out
+    assert "__pos_intense__" in out
 
 
 def test_code_mixed():
@@ -76,7 +78,9 @@ def test_contrast_preservation():
 def test_contrast_clause_emphasized():
     out = clean_text("Product acha hai lekin quality kharab hai")
     assert out.count("kharab") >= 3
-    assert out.count("acha") == 1
+    # Setup-side "acha" appears once before contrast; intensity may repeat it
+    before_contrast = out.split("__contrast__")[0]
+    assert before_contrast.count("acha") >= 1
     assert "__contrast__" in out
 
 
@@ -107,6 +111,25 @@ def test_urdu_contrast_preserved():
     assert out.count("خراب") >= 3
 
 
+def test_urdu_par_not_treated_as_contrast():
+    """'وقت پر' means on time — پر must not trigger contrast emphasis."""
+    out = clean_text("ڈیلیوری وقت پر ہوئی پروڈکٹ عام سا ہے")
+    assert "__contrast__" not in out
+
+
+def test_intensity_emphasis_negative_urdu():
+    out = clean_text("یہ پروڈکٹ بالکل بیکار ہے کوالٹی خراب ہے")
+    assert out.count("بیکار") >= 3
+    assert "__neg_intense__" in out
+    assert "__intensifier__" in out
+
+
+def test_intensity_emphasis_positive():
+    out = clean_text("Bohat zabardast product hai")
+    assert out.count("zabardast") >= 3
+    assert "__pos_intense__" in out
+
+
 def test_mixed_latin_and_urdu():
     out = clean_text("Quality اچھی hai but delivery late")
     assert "quality" in out
@@ -124,7 +147,10 @@ def test_consistent_repeated_calls():
 
 
 def test_preprocess_texts_list():
-    assert preprocess_texts([" Hi ", None, "OK"]) == ["hi", "", "ok"]
+    out = preprocess_texts([" Hi ", None, "OK"])
+    assert out[0] == "hi"
+    assert out[1] == ""
+    assert out[2].startswith("ok")
 
 
 def test_is_effectively_empty():

@@ -93,9 +93,9 @@ def _oversample_rare_train_rows(train_df):
     ]
     parts = [train_df]
     if not neutral.empty:
-        parts.append(pd.concat([neutral] * 24, ignore_index=True))
+        parts.append(pd.concat([neutral] * 40, ignore_index=True))
     if not urdu.empty:
-        parts.append(pd.concat([urdu] * 7, ignore_index=True))
+        parts.append(pd.concat([urdu] * 15, ignore_index=True))
     if len(parts) == 1:
         return train_df
     return pd.concat(parts, ignore_index=True)

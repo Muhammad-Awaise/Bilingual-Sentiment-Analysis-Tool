@@ -19,9 +19,26 @@ from src.config import (
     MODEL_ARTIFACT_PATH,
     MODEL_NAME,
     NEUTRAL_CONFIDENCE_MAX,
+    NEUTRAL_MARGIN_MAX,
+    NEUTRAL_MULTICLASS_FLOOR,
     SUPPORTED_LABELS,
 )
 from src.preprocessing import clean_text, is_effectively_empty
+
+
+def _intensity_tie_break(cleaned: str) -> str | None:
+    """If cleaned text has clear intensity markers, use them on near-ties."""
+    pos_hits = cleaned.count("__pos_intense__")
+    neg_hits = cleaned.count("__neg_intense__")
+    neu_hits = cleaned.count("__neutral_cue__")
+    if pos_hits > neg_hits and pos_hits > 0:
+        return LABEL_POSITIVE
+    if neg_hits > pos_hits and neg_hits > 0:
+        return LABEL_NEGATIVE
+    if neu_hits > 0 and pos_hits == 0 and neg_hits == 0:
+        return LABEL_NEUTRAL
+    return None
+
 
 
 class PredictionError(ValueError):
@@ -86,19 +103,48 @@ def _model_classes(pipeline) -> list[str]:
     return [str(c) for c in classes]
 
 
+def _class_proba_row(pipeline, cleaned_or_raw_text: str) -> list[float] | None:
+    try:
+        if hasattr(pipeline, "predict_proba"):
+            row = pipeline.predict_proba([cleaned_or_raw_text])[0]
+            return [float(x) for x in row]
+    except Exception:
+        return None
+    return None
+
+
 def _apply_neutral_if_uncertain(
     prediction: str,
     model_score: float | None,
     pipeline,
+    proba_row: list[float] | None = None,
+    cleaned_text: str | None = None,
 ) -> str:
     """
-    Keep trained neutral predictions. Also map low max-probability scores to
-    neutral so mixed / sparse / Urdu-script inputs are not forced into
-    positive or negative when the model is unsure.
+    Keep trained neutral predictions.
+
+    - Multiclass: trust the classifier; on near-ties prefer intensity markers,
+      else Neutral when the top score is weak.
+    - Binary legacy: map very low max-probability to neutral.
     """
     pred = str(prediction)
     if pred == LABEL_NEUTRAL:
         return LABEL_NEUTRAL
+
+    classes = _model_classes(pipeline)
+    if LABEL_NEUTRAL in classes:
+        if proba_row and len(proba_row) >= 2:
+            ordered = sorted(proba_row, reverse=True)
+            margin = ordered[0] - ordered[1]
+            if margin < NEUTRAL_MARGIN_MAX:
+                if cleaned_text:
+                    voted = _intensity_tie_break(cleaned_text)
+                    if voted is not None:
+                        return voted
+                if ordered[0] < NEUTRAL_MULTICLASS_FLOOR:
+                    return LABEL_NEUTRAL
+        return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
+
     if model_score is not None and float(model_score) < NEUTRAL_CONFIDENCE_MAX:
         return LABEL_NEUTRAL
     if pred in SUPPORTED_LABELS:
@@ -142,7 +188,10 @@ def predict_one(
             pred = LABEL_NEUTRAL
 
     scores = _decision_score(pipeline, [text])
-    pred = _apply_neutral_if_uncertain(pred, scores[0], pipeline)
+    proba_row = _class_proba_row(pipeline, text)
+    pred = _apply_neutral_if_uncertain(
+        pred, scores[0], pipeline, proba_row, cleaned_text=cleaned
+    )
     return {
         "text": text,
         "cleaned_text": cleaned,
@@ -192,7 +241,18 @@ def predict_batch(
         valid_raw = [texts[i] if isinstance(texts[i], str) else str(texts[i]) for i in valid_indices]
         preds = pipeline.predict(valid_raw)
         sc = _decision_score(pipeline, valid_raw)
-        for idx, p, s in zip(valid_indices, preds, sc):
+        proba_rows: list[list[float] | None]
+        try:
+            if hasattr(pipeline, "predict_proba"):
+                proba_rows = [
+                    [float(x) for x in row]
+                    for row in pipeline.predict_proba(valid_raw)
+                ]
+            else:
+                proba_rows = [None] * len(valid_indices)
+        except Exception:
+            proba_rows = [None] * len(valid_indices)
+        for idx, p, s, proba in zip(valid_indices, preds, sc, proba_rows):
             pred = str(p)
             if pred not in SUPPORTED_LABELS:
                 if pred in {"1", "pos", LABEL_POSITIVE}:
@@ -201,7 +261,13 @@ def predict_batch(
                     pred = LABEL_NEGATIVE
                 else:
                     pred = LABEL_NEUTRAL
-            predictions[idx] = _apply_neutral_if_uncertain(pred, s, pipeline)
+            predictions[idx] = _apply_neutral_if_uncertain(
+                pred,
+                s,
+                pipeline,
+                proba,
+                cleaned_text=cleaned_list[idx],
+            )
             scores[idx] = s
 
     rows = []

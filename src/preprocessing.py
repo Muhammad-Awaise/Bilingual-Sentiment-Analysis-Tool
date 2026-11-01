@@ -8,6 +8,7 @@ Design goals (see docs/LINGUISTIC_DECISIONS.md):
 - Apply a *closed-set* Roman Urdu negation spelling map (nahin → nahi, …)
 - Keep Urdu (Arabic-script) letters so Nastaliq reviews are not wiped empty
 - Lightly emphasize contrast verdict clauses for bag-of-ngrams models
+- Lightly emphasize strong polarity + intensifiers (intensity-aware cues)
 - Do NOT strip a large stopword list that would erase polarity cues
 """
 
@@ -51,10 +52,139 @@ _NEGATION_SPELLING_MAP = {
     "nhin": "nahi",
 }
 
-# Latin + Urdu-script contrast cues (word boundaries via Unicode-aware \b)
+# Contrast cues only — do NOT include Urdu preposition "پر" (on/at), which
+# falsely fired on phrases like "وقت پر" (on time).
 _CONTRAST_RE = re.compile(
-    r"(?<!\w)(but|lekin|magar|however|though|لیکن|مگر|پر)(?!\w)",
+    r"(?<!\w)(but|lekin|magar|however|though|لیکن|مگر)(?!\w)",
     re.UNICODE,
+)
+
+# Closed polarity lexicons for light intensity re-weighting (train=infer identical).
+_STRONG_POSITIVE = frozenset(
+    {
+        "excellent",
+        "amazing",
+        "awesome",
+        "perfect",
+        "love",
+        "loved",
+        "great",
+        "wonderful",
+        "best",
+        "recommended",
+        "satisfied",
+        "happy",
+        "superb",
+        "outstanding",
+        "impressive",
+        "comfortable",
+        "delightful",
+        "helpful",
+        "secure",
+        "smooth",
+        "genuine",
+        "zabardast",
+        "zabrdast",
+        "kamaal",
+        "acha",
+        "achi",
+        "achy",
+        "khush",
+        "pasand",
+        "behtareen",
+        "solid",
+        "premium",
+        "اچھی",
+        "اچھا",
+        "زبردست",
+        "خوش",
+        "بہترین",
+        "پیارا",
+        "سفارش",
+        "مضبوط",
+        "کمال",
+        "صاف",
+        "درست",
+    }
+)
+_STRONG_NEGATIVE = frozenset(
+    {
+        "terrible",
+        "awful",
+        "horrible",
+        "worst",
+        "waste",
+        "useless",
+        "broken",
+        "broke",
+        "poor",
+        "bad",
+        "disappointed",
+        "disappointing",
+        "fake",
+        "bekaar",
+        "bekâr",
+        "kharab",
+        "bura",
+        "buri",
+        "nakhush",
+        "mat",
+        "toot",
+        "damage",
+        "damaged",
+        "rude",
+        "بیکار",
+        "خراب",
+        "برا",
+        "بری",
+        "جعلی",
+        "ٹوٹ",
+        "ضائع",
+        "کمزور",
+        "سستا",
+        "دیر",
+        "غلط",
+        "ناخوش",
+    }
+)
+_INTENSIFIERS = frozenset(
+    {
+        "very",
+        "extremely",
+        "really",
+        "totally",
+        "absolutely",
+        "highly",
+        "so",
+        "bohat",
+        "bahut",
+        "boht",
+        "bilkul",
+        "sab",
+        "زیادہ",
+        "بہت",
+        "بالکل",
+        "انتہائی",
+    }
+)
+_NEUTRAL_CUES = frozenset(
+    {
+        "okay",
+        "ok",
+        "average",
+        "normal",
+        "ordinary",
+        "fine",
+        "usable",
+        "theek",
+        "awsat",
+        "aam",
+        "chalega",
+        "ٹھیک",
+        "عام",
+        "اوسط",
+        "چلے",
+    }
 )
 
 
@@ -85,6 +215,39 @@ def _emphasize_contrast_clause(text: str) -> str:
     if before:
         return f"{before} __contrast__ {marker}"
     return f"__contrast__ {marker}"
+
+
+def _emphasize_polarity_intensity(text: str) -> str:
+    """
+    Repeat strong polarity tokens (and mark intensifiers) so bag-of-ngrams
+    reflects word intensity without a separate neural intensity head.
+    """
+    tokens = text.split()
+    if not tokens:
+        return text
+    out: list[str] = []
+    for i, tok in enumerate(tokens):
+        out.append(tok)
+        prev = tokens[i - 1] if i else ""
+        boosted = False
+        if tok in _STRONG_NEGATIVE:
+            reps = 2 + (1 if prev in _INTENSIFIERS else 0)
+            out.extend([tok] * reps)
+            out.append("__neg_intense__")
+            boosted = True
+        elif tok in _STRONG_POSITIVE:
+            reps = 2 + (1 if prev in _INTENSIFIERS else 0)
+            out.extend([tok] * reps)
+            out.append("__pos_intense__")
+            boosted = True
+        elif tok in _NEUTRAL_CUES:
+            out.append(tok)
+            out.append("__neutral_cue__")
+            boosted = True
+        if prev in _INTENSIFIERS and boosted:
+            out.append("__intensifier__")
+            out.append(prev)
+    return " ".join(out)
 
 
 def clean_text(text: Any) -> str:
@@ -122,6 +285,7 @@ def clean_text(text: Any) -> str:
 
     text = _canonicalize_negation_spellings(text)
     text = _emphasize_contrast_clause(text)
+    text = _emphasize_polarity_intensity(text)
     return _WHITESPACE_RE.sub(" ", text).strip()
 
 
