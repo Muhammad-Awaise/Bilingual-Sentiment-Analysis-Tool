@@ -1,7 +1,7 @@
 # Project Plan — Bilingual Sentiment Analyzer
 
 **Audience:** Graduate-admissions-ready linguistics + NLP project  
-**Constraint:** Four days, CPU-only, no paid APIs  
+**Constraint:** CPU-only, no paid APIs  
 **Research question:** How do negation, code-switching, and informal Roman Urdu spelling affect sentiment classification on bilingual product reviews?
 
 ---
@@ -24,8 +24,8 @@ A **binary** (positive / negative) TF-IDF + Logistic Regression pipeline with:
 
 - Reference 1 is binary (`pos`/`neg`).
 - Daraz files include Neutral, but combining Neutral with binary-only sources without a shared annotation guide would be scientifically sloppy.
-- Four-day scope favors one clear label set we can defend in interviews.
-- Neutral rows are **excluded** (and documented) if optional Daraz preparation is used.
+- A clear label set is easier to defend in interviews and evaluation.
+- Neutral rows in optional Daraz preparation may still be excluded when building binary-only external test files.
 
 ---
 
@@ -57,14 +57,14 @@ Prevention of leakage: stratified split **before** fitting TF-IDF; optional near
 
 ---
 
-## 5. Four-day milestones
+## 5. Delivery milestones
 
-| Day | Focus | Acceptance |
-|-----|-------|------------|
-| 1 | Structure, docs, data load, preprocess, train, unit tests | Train on CPU; first tests pass |
-| 2 | Evaluate, save model, linguistic fixtures, error report | Reload + predict; real metrics file |
-| 3 | Streamlit single + batch + charts + validation | Local app classifies reviews |
-| 4 | Full pytest, README, DEPLOYMENT, TEST_REPORT | No failing mandatory tests |
+| Phase | Focus | Acceptance |
+|-------|-------|------------|
+| Core pipeline | Structure, docs, data load, preprocess, train, unit tests | Train on CPU; first tests pass |
+| Evaluation | Evaluate, save model, linguistic fixtures, error report | Reload + predict; real metrics file |
+| App | Streamlit single + batch + charts + validation | Local app classifies reviews |
+| Hardening | Full pytest, README, DEPLOYMENT, TEST_REPORT | No failing mandatory tests |
 
 ---
 

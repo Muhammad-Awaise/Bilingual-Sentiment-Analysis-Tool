@@ -168,7 +168,7 @@ Not verified in this workspace. See `docs/DEPLOYMENT.md` to deploy on Streamlit 
 | Doc | Contents |
 |-----|----------|
 | `docs/REFERENCE_ANALYSIS.md` | Third-party audit |
-| `docs/PROJECT_PLAN.md` | Four-day plan |
+| `docs/PROJECT_PLAN.md` | Scope, milestones, interview story |
 | `docs/LINGUISTIC_DECISIONS.md` | Why preprocessing keeps negation |
 | `docs/TEST_REPORT.md` | Test run evidence |
 | `docs/DEPLOYMENT.md` | Cloud steps |
