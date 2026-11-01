@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local secrets (none expected, but belt-and-suspenders)
+.env
+.env.*
+
+# Large / non-redistributable data derived from references
+data/processed/*
+!data/processed/.gitkeep
+data/raw/external/
+data/raw/Daraz*
+data/raw/daraz*
+data/raw/RomanUrdu*
+
+# Reports generated locally (metrics JSON/MD are useful — keep if small)
+reports/holdout_split.joblib
+
+# Third-party clones (re-clone via references/README.md)
+references/roman_urdu_sentiment_analysis/
+references/AIML-Bilingual-Sentiment-Analysis-of-Daraz-Reviews/
+
+# Streamlit
+.streamlit/secrets.toml

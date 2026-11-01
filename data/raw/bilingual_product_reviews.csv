@@ -1,0 +1,167 @@
+text,label,language
+Excellent product quality and fast delivery.,positive,english
+"I love this phone case, perfect fit.",positive,english
+"Great value for money, highly recommended.",positive,english
+The fabric is soft and the color is beautiful.,positive,english
+Seller was helpful and packaging was secure.,positive,english
+Battery life is impressive and charging is quick.,positive,english
+Works exactly as described in the listing.,positive,english
+Very comfortable shoes for daily walking.,positive,english
+Sound quality is clear and volume is strong.,positive,english
+"Arrived earlier than expected, thank you.",positive,english
+Sturdy build and elegant design.,positive,english
+Customer support resolved my issue politely.,positive,english
+"Perfect gift, my sister was delighted.",positive,english
+The camera photos look sharp in daylight.,positive,english
+Easy to install and instructions were clear.,positive,english
+"Genuine product, smells fresh and lasts long.",positive,english
+"Smooth performance, no lag while multitasking.",positive,english
+Comfortable fit and good stitching quality.,positive,english
+"Worth every rupee, will buy again.",positive,english
+Bright display and responsive touchscreen.,positive,english
+"Terrible quality, broke after one day.",negative,english
+"Not good at all, waste of money.",negative,english
+Delivery was late and the box was damaged.,negative,english
+The color is not the same as shown.,negative,english
+"Battery drains too fast, very disappointing.",negative,english
+Cheap material and poor stitching.,negative,english
+Seller ignored my messages completely.,negative,english
+Does not work as advertised.,negative,english
+Smell is awful and product looks used.,negative,english
+Screen has dead pixels already.,negative,english
+"Too small, size chart is misleading.",negative,english
+Stops working after a few charges.,negative,english
+Customer service was rude and unhelpful.,negative,english
+I am not satisfied with this purchase.,negative,english
+"Fake product, do not buy.",negative,english
+Overpriced and underwhelming performance.,negative,english
+Returned it because quality is bad.,negative,english
+Buttons stick and the finish peels off.,negative,english
+"No, this is not worth buying.",negative,english
+Worst earphones I have ever used.,negative,english
+"Yeh product bohat acha hai, mein khush hun.",positive,roman_urdu
+Quality zabardast hai packing bhi solid thi.,positive,roman_urdu
+Seller ne jaldi deliver kiya shukriya.,positive,roman_urdu
+Bohat soft material hai colour bhi pyara hai.,positive,roman_urdu
+Battery timing kamaal hai charge jaldi hota hai.,positive,roman_urdu
+Price ke hisab se value bohat achi hai.,positive,roman_urdu
+Phone cover perfect fit hai recommend karta hun.,positive,roman_urdu
+Sound clear hai bass bhi theek hai.,positive,roman_urdu
+Size bilkul sahi aaya comfortable hai.,positive,roman_urdu
+Camera pictures clear aati hain.,positive,roman_urdu
+Original product mila fragrance bhi lasting hai.,positive,roman_urdu
+Delivery on time thi parcel safe tha.,positive,roman_urdu
+Design stylish hai look premium lagta hai.,positive,roman_urdu
+Shoes comfortable hain walking ke liye best.,positive,roman_urdu
+Instructions asaan thin install easy tha.,positive,roman_urdu
+Customer support ne masla jaldi solve kiya.,positive,roman_urdu
+Gift ke liye perfect tha sab ko pasand aaya.,positive,roman_urdu
+Performance smooth hai hang nahi hota.,positive,roman_urdu
+Stitching strong hai kapra soft hai.,positive,roman_urdu
+Mein isay dobara kharidunga inshallah.,positive,roman_urdu
+Yeh product bilkul bekaar hai.,negative,roman_urdu
+Quality kharab hai ek din mein toot gaya.,negative,roman_urdu
+Delivery late thi box bhi damage tha.,negative,roman_urdu
+Colour picture jaisa nahi aaya.,negative,roman_urdu
+Battery bohat jaldi khatam ho jati hai.,negative,roman_urdu
+Material sasta hai stitching kamzor hai.,negative,roman_urdu
+Seller ne reply hi nahi diya.,negative,roman_urdu
+Advertisement jaisa kaam nahi karta.,negative,roman_urdu
+Smell bohat buri hai used lag raha tha.,negative,roman_urdu
+Screen pe already spots hain.,negative,roman_urdu
+Size chota aaya size chart ghalat hai.,negative,roman_urdu
+Charge karne ke baad band ho jata hai.,negative,roman_urdu
+Support wale rude the help nahi ki.,negative,roman_urdu
+Mein is purchase se khush nahi hun.,negative,roman_urdu
+Fake maal hai mat kharidna.,negative,roman_urdu
+Mehnga hai aur performance weak hai.,negative,roman_urdu
+Return karna para quality bohat buri thi.,negative,roman_urdu
+Buttons stuck hote hain coating utar rahi hai.,negative,roman_urdu
+Nahi yeh lene ke qabil nahi.,negative,roman_urdu
+Sab se bure earphones use kiye hain.,negative,roman_urdu
+Product quality bohat achi hai and delivery was fast.,positive,code_mixed
+"Bohat happy hun with this purchase, highly recommended.",positive,code_mixed
+Camera clear hai but low light mein bhi theek chal raha hai.,positive,code_mixed
+Packaging secure thi and item exact same as photos.,positive,code_mixed
+Price reasonable hai value for money milti hai.,positive,code_mixed
+Shoes comfortable hain for long walks.,positive,code_mixed
+Seller cooperative tha issues jaldi resolve hue.,positive,code_mixed
+Battery life impressive hai no complaints.,positive,code_mixed
+Sound quality clear hai bass sufficient hai.,positive,code_mixed
+Fabric soft hai colour beautiful hai.,positive,code_mixed
+Easy installation thi instructions clear the.,positive,code_mixed
+Gift wrap acha tha sister ko bohat pasand aaya.,positive,code_mixed
+Performance smooth hai multitasking easy hai.,positive,code_mixed
+Build quality solid hai design elegant hai.,positive,code_mixed
+Arrived on time and quality zabardast.,positive,code_mixed
+Genuine product mila fragrance lasting hai.,positive,code_mixed
+Touchscreen responsive hai display bright hai.,positive,code_mixed
+Worth buying hai will order again.,positive,code_mixed
+Customer care polite tha and helpful.,positive,code_mixed
+Overall experience positive tha highly satisfied.,positive,code_mixed
+Quality achi nahi hai and material feels cheap.,negative,code_mixed
+Delivery late thi but product bhi damaged aaya.,negative,code_mixed
+"Not satisfied at all, bilkul waste of money.",negative,code_mixed
+Battery drains fast hai very disappointing.,negative,code_mixed
+Colour same nahi hai as shown in pictures.,negative,code_mixed
+Seller ne reply nahi diya ignored my messages.,negative,code_mixed
+"Does not work properly, bohat bekaar hai.",negative,code_mixed
+Smell awful hai product used lagta hai.,negative,code_mixed
+Size chart misleading hai too small aaya.,negative,code_mixed
+Screen pe dead pixels hain already.,negative,code_mixed
+Overpriced hai and performance weak hai.,negative,code_mixed
+Buttons stick karte hain finish peels off.,negative,code_mixed
+Fake product hai do not buy please.,negative,code_mixed
+Customer service rude thi no help mili.,negative,code_mixed
+Returned it because quality bohat kharab thi.,negative,code_mixed
+"Stops working after few charges, useless hai.",negative,code_mixed
+Packaging poor thi item scratched aaya.,negative,code_mixed
+No this is not worth buying bilkul.,negative,code_mixed
+"Worst experience ever, kabhi nahi lunga dobara.",negative,code_mixed
+Advertised features missing hain totally disappointed.,negative,code_mixed
+This is good,positive,english
+This is not good,negative,english
+Product acha hai,positive,roman_urdu
+Product acha nahi hai,negative,roman_urdu
+Product acha hai lekin delivery late thi,negative,code_mixed
+Quality achi hai but packaging was damaged,negative,code_mixed
+Bohat acha product hai,positive,roman_urdu
+Bohat bura experience tha,negative,roman_urdu
+I am happy with the quality,positive,english
+I am not happy with the quality,negative,english
+Service theek hai magar item defective nikla,negative,code_mixed
+Everything was fine except the delayed delivery still usable,positive,english
+Price theek hai aur quality bhi solid hai,positive,roman_urdu
+Price theek nahi hai quality bhi weak hai,negative,roman_urdu
+Looks premium but feels cheap,negative,english
+Looks cheap but feels premium surprisingly,positive,english
+Delivery late thi lekin product zabardast hai,positive,code_mixed
+Product zabardast hai lekin delivery late thi aur box khula tha,negative,code_mixed
+Nahin yeh mat lena quality kharab hai,negative,roman_urdu
+Haan yeh lena chahiye quality bohat achi hai,positive,roman_urdu
+Camera acha hai night mode weak hai overall still useful,positive,code_mixed
+Camera acha nahi hai night mode bhi bekaar hai,negative,code_mixed
+Comfortable fit and soft sole,positive,english
+Uncomfortable fit and hard sole,negative,english
+Packing achi thi item safe tha,positive,roman_urdu
+Packing achi nahi thi item damage tha,negative,roman_urdu
+Great headphones with clear sound,positive,english
+Bad headphones with unclear sound,negative,english
+Seller honest tha description accurate thi,positive,code_mixed
+Seller honest nahi tha description wrong thi,negative,code_mixed
+Ye mobile boht acha hy battery bhi theek hy,positive,roman_urdu
+Ye mobile boht bura hy battery bhi kharab hy,negative,roman_urdu
+Qlty zabrdast hai price bhi ok hai,positive,roman_urdu
+Qlty kharab hai price bhi ziada hai,negative,roman_urdu
+Parcel time pe mil gya thanks seller,positive,code_mixed
+Parcel late mila and item broken tha,negative,code_mixed
+Mujhe yeh pasand aaya recommend karta hun,positive,roman_urdu
+Mujhe yeh pasand nahi aaya recommend nahi karta,negative,roman_urdu
+Very nice product highly satisfied,positive,english
+Very poor product highly dissatisfied,negative,english
+Build quality solid hai but delivery late thi,negative,code_mixed
+Camera theek hai but courier service late thi,negative,code_mixed
+Material soft hai but parcel late deliver hua,negative,code_mixed
+Screen clear hai but shipment was late,negative,code_mixed
+Fits well but the delivery came late,negative,english
+Looks fine but arrival was late and slow,negative,english

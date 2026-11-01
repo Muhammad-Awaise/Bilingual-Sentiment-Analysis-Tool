@@ -1,0 +1,16 @@
+text,category,expected_sentiment,notes
+This product is good,negation_control,positive,Baseline positive without negation
+This product is not good,negation_english,negative,English negation flips polarity
+Product acha hai,negation_control_urdu,positive,Roman Urdu positive baseline
+Product acha nahi hai,negation_roman_urdu,negative,Roman Urdu negation with nahi
+Product acha nahin hai,negation_spelling,negative,Alternate spelling nahin
+Product acha hai lekin quality kharab hai,contrast_lekin,negative,Contrast clause with lekin dominates overall judgment
+Quality achi hai but delivery late thi,contrast_code_switch,negative,Code-switched contrast with but
+Bohat acha product hai,intensifier_positive,positive,Intensifier bohat strengthens positive
+Bohat bura experience tha,intensifier_negative,negative,Intensifier bohat strengthens negative
+Qlty zabrdast hai price bhi ok,informal_spelling_pos,positive,Compressed informal Roman Urdu spelling
+Qlty kharab hai price bhi ziada,informal_spelling_neg,negative,Informal spelling with negative cues
+I like the design but I am not happy with the battery,mixed_ambiguous,negative,Mixed sentiment; overall dissatisfaction on key feature
+No complaints everything works well,negation_of_complaint,positive,Negation of a negative noun yields positive meaning
+Kabhi nahi lunga dobara worst product,strong_neg_code_mixed,negative,Strong negative with code-mixing
+Seller cooperative tha and item exact same as photos,code_switch_positive,positive,Positive code-switched review

@@ -1,0 +1,101 @@
+{
+  "labels": [
+    "negative",
+    "positive"
+  ],
+  "n_samples": 7038,
+  "accuracy": 0.8904518329070759,
+  "precision_macro": 0.8834736402588499,
+  "recall_macro": 0.8858075373474632,
+  "f1_macro": 0.8845989509544616,
+  "confusion_matrix": [
+    [
+      2341,
+      363
+    ],
+    [
+      408,
+      3926
+    ]
+  ],
+  "classification_report": {
+    "negative": {
+      "precision": 0.8515823935976718,
+      "recall": 0.8657544378698225,
+      "f1-score": 0.8586099394828535,
+      "support": 2704.0
+    },
+    "positive": {
+      "precision": 0.9153648869200279,
+      "recall": 0.9058606368251039,
+      "f1-score": 0.9105879624260698,
+      "support": 4334.0
+    },
+    "accuracy": 0.8904518329070759,
+    "macro avg": {
+      "precision": 0.8834736402588499,
+      "recall": 0.8858075373474632,
+      "f1-score": 0.8845989509544616,
+      "support": 7038.0
+    },
+    "weighted avg": {
+      "precision": 0.8908596493605437,
+      "recall": 0.8904518329070759,
+      "f1-score": 0.89061800305715,
+      "support": 7038.0
+    }
+  },
+  "model_name": "TF-IDF + LinearSVC (calibrated)",
+  "majority_baseline_accuracy": 0.6157999431656721,
+  "train_size": 28150,
+  "test_size": 7038,
+  "class_counts_full": {
+    "positive": 21667,
+    "negative": 13521
+  },
+  "language_counts_full": {
+    "code_mixed": 15884,
+    "roman_urdu": 14988,
+    "english": 3696,
+    "unknown": 620
+  },
+  "data_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\data\\processed\\reviews_train_expanded.csv",
+  "calibrated": true,
+  "class_weight": "balanced",
+  "tuned": false,
+  "tune_meta": null,
+  "delta_f1_vs_majority_baseline": 0.2687990077887895,
+  "pr_auc_positive": 0.9746838481773443,
+  "per_language": {
+    "code_mixed": {
+      "n_samples": 3188,
+      "accuracy": 0.9560853199498118,
+      "f1_macro": 0.9491138012054346,
+      "precision_macro": 0.9498439374982586,
+      "recall_macro": 0.9483937972933163
+    },
+    "english": {
+      "n_samples": 764,
+      "accuracy": 0.8324607329842932,
+      "f1_macro": 0.8324193902171528,
+      "precision_macro": 0.8330282776349615,
+      "recall_macro": 0.8337420910533584
+    },
+    "roman_urdu": {
+      "n_samples": 2955,
+      "accuracy": 0.8321489001692047,
+      "f1_macro": 0.8294607269118996,
+      "precision_macro": 0.8287416291092935,
+      "recall_macro": 0.8303350214585066
+    },
+    "unknown": {
+      "n_samples": 131,
+      "accuracy": 0.9465648854961832,
+      "f1_macro": 0.9450140912634167,
+      "precision_macro": 0.9490807934204161,
+      "recall_macro": 0.9420238095238096
+    }
+  },
+  "notes": "Metrics are computed on a held-out stratified test set created during training. They are not hardcoded. Macro F1 and PR-AUC are preferred over accuracy when classes are imbalanced. Small curated subsets yield optimistic or unstable estimates and should not be treated as large-scale benchmarks.",
+  "confusion_matrix_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\reports\\confusion_matrix.png"
+}

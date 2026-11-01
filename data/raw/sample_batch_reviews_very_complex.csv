@@ -1,0 +1,401 @@
+review_id,language,category,review
+1,english,clear_positive,Excellent phone quality and fast delivery.
+2,english,clear_positive,"I love this phone, perfect fit and premium feel."
+3,english,clear_positive,"Great value phone, highly recommended."
+4,english,clear_positive,The phone works exactly as described.
+5,english,clear_positive,Very comfortable phone for daily use.
+6,english,clear_positive,Seller was helpful and the phone packaging was secure.
+7,english,clear_positive,"Perfect phone gift, everyone was delighted."
+8,english,clear_positive,Smooth phone performance with no lag.
+9,english,clear_positive,Bright display and responsive phone controls.
+10,english,clear_positive,"Worth buying this phone, will order again."
+11,english,clear_negative,"Terrible phone quality, broke after one day."
+12,english,clear_negative,"This phone is not good, waste of money."
+13,english,clear_negative,Late delivery and the phone box was damaged.
+14,english,clear_negative,"phone battery drains too fast, very disappointing."
+15,english,clear_negative,Cheap phone material and poor stitching.
+16,english,clear_negative,Seller ignored my messages about the phone.
+17,english,clear_negative,"Fake phone, do not buy."
+18,english,clear_negative,Returned the phone because quality is bad.
+19,english,clear_negative,Worst phone I have ever used.
+20,english,clear_negative,The phone does not work as advertised.
+21,roman_urdu,clear_positive,"Yeh phone bohat acha hai, mein khush hun."
+22,roman_urdu,clear_positive,phone quality zabardast hai packing bhi solid thi.
+23,roman_urdu,clear_positive,Seller ne phone jaldi deliver kiya shukriya.
+24,roman_urdu,clear_positive,phone battery timing kamaal hai charge jaldi hota hai.
+25,roman_urdu,clear_positive,phone size bilkul sahi aaya comfortable hai.
+26,roman_urdu,clear_positive,Original phone mila fragrance bhi lasting hai.
+27,roman_urdu,clear_positive,phone design stylish hai look premium lagta hai.
+28,roman_urdu,clear_positive,Gift ke liye phone perfect tha sab ko pasand aaya.
+29,roman_urdu,clear_positive,phone performance smooth hai hang nahi hota.
+30,roman_urdu,clear_positive,Mein yeh phone dobara kharidunga inshallah.
+31,roman_urdu,clear_negative,Yeh phone bilkul bekaar hai.
+32,roman_urdu,clear_negative,phone quality kharab hai ek din mein toot gaya.
+33,roman_urdu,clear_negative,phone delivery late thi box bhi damage tha.
+34,roman_urdu,clear_negative,phone battery bohat jaldi khatam ho jati hai.
+35,roman_urdu,clear_negative,Seller ne phone ke bare mein reply nahi diya.
+36,roman_urdu,clear_negative,Fake phone maal hai mat kharidna.
+37,roman_urdu,clear_negative,phone size chota aaya size chart ghalat hai.
+38,roman_urdu,clear_negative,Mein is phone purchase se khush nahi hun.
+39,roman_urdu,clear_negative,Return karna para phone quality bohat buri thi.
+40,roman_urdu,clear_negative,Nahi yeh phone lene ke qabil nahi.
+41,code_mixed,clear_positive,phone quality bohat achi hai and delivery was fast.
+42,code_mixed,clear_positive,"Very happy with this phone, zabardast experience."
+43,code_mixed,clear_positive,phone packing secure thi and item exact as photos.
+44,code_mixed,clear_positive,Seller cooperative tha phone issues jaldi resolve hue.
+45,code_mixed,clear_positive,Worth buying hai this phone will order again.
+46,code_mixed,clear_positive,phone performance smooth hai multitasking easy hai.
+47,code_mixed,clear_positive,Genuine phone mila and quality looks premium.
+48,code_mixed,clear_positive,Overall experience positive tha with this phone.
+49,code_mixed,clear_positive,phone size bilkul sahi aaya comfortable for daily use.
+50,code_mixed,clear_positive,Arrived on time and phone quality zabardast.
+51,code_mixed,clear_negative,phone quality achi nahi hai and material feels cheap.
+52,code_mixed,clear_negative,"Not satisfied with phone, bilkul waste of money."
+53,code_mixed,clear_negative,Delivery late thi and phone bhi damaged aaya.
+54,code_mixed,clear_negative,Seller ne reply nahi diya about my phone order.
+55,code_mixed,clear_negative,Fake phone hai do not buy please original nahi mila.
+56,code_mixed,clear_negative,phone battery drains fast hai very disappointing.
+57,code_mixed,clear_negative,Size chart misleading hai phone too small aaya.
+58,code_mixed,clear_negative,Returned phone because quality bohat kharab thi.
+59,code_mixed,clear_negative,Worst phone experience ever kabhi nahi lunga dobara.
+60,code_mixed,clear_negative,Overpriced phone hai and performance weak hai.
+61,english,negation,This phone is not good at all.
+62,english,contrast,I like this phone design but battery life is terrible.
+63,english,contrast_pos,Delivery was late but the phone quality is excellent.
+64,english,sarcasm,"Oh wonderful, another broken phone. Great service."
+65,roman_urdu,negation,Yeh phone acha nahi hai bilkul.
+66,roman_urdu,contrast,phone acha hai lekin quality kharab hai.
+67,roman_urdu,intensifier_pos,Bohat zabardast phone hai kamaal quality.
+68,roman_urdu,intensifier_neg,Bohat bura phone experience tha dobara nahi lunga.
+69,code_mixed,contrast,phone quality achi hai but delivery late thi.
+70,code_mixed,contrast,Delivery late thi lekin phone zabardast hai.
+71,code_mixed,negation,I am not happy with this phone bilkul bekaar nikla.
+72,code_mixed,url_noise,Nice phone check https://example.com/item72 @seller #deal
+73,code_mixed,punct_noise,!!! WORST phone ??? never again.... packing ZERO!!!!
+74,code_mixed,informal_pos,Qlty of phone zabrdast hai price bhi ok hy.
+75,code_mixed,informal_neg,Qlty of phone kharab hai price bhi ziada hy.
+76,english,clear_positive,Excellent shoes quality and fast delivery.
+77,english,clear_positive,"I love this shoes, perfect fit and premium feel."
+78,english,clear_positive,"Great value shoes, highly recommended."
+79,english,clear_positive,The shoes works exactly as described.
+80,english,clear_positive,Very comfortable shoes for daily use.
+81,english,clear_positive,Seller was helpful and the shoes packaging was secure.
+82,english,clear_positive,"Perfect shoes gift, everyone was delighted."
+83,english,clear_positive,Smooth shoes performance with no lag.
+84,english,clear_positive,Bright display and responsive shoes controls.
+85,english,clear_positive,"Worth buying this shoes, will order again."
+86,english,clear_negative,"Terrible shoes quality, broke after one day."
+87,english,clear_negative,"This shoes is not good, waste of money."
+88,english,clear_negative,Late delivery and the shoes box was damaged.
+89,english,clear_negative,"shoes battery drains too fast, very disappointing."
+90,english,clear_negative,Cheap shoes material and poor stitching.
+91,english,clear_negative,Seller ignored my messages about the shoes.
+92,english,clear_negative,"Fake shoes, do not buy."
+93,english,clear_negative,Returned the shoes because quality is bad.
+94,english,clear_negative,Worst shoes I have ever used.
+95,english,clear_negative,The shoes does not work as advertised.
+96,roman_urdu,clear_positive,"Yeh shoes bohat acha hai, mein khush hun."
+97,roman_urdu,clear_positive,shoes quality zabardast hai packing bhi solid thi.
+98,roman_urdu,clear_positive,Seller ne shoes jaldi deliver kiya shukriya.
+99,roman_urdu,clear_positive,shoes battery timing kamaal hai charge jaldi hota hai.
+100,roman_urdu,clear_positive,shoes size bilkul sahi aaya comfortable hai.
+101,roman_urdu,clear_positive,Original shoes mila fragrance bhi lasting hai.
+102,roman_urdu,clear_positive,shoes design stylish hai look premium lagta hai.
+103,roman_urdu,clear_positive,Gift ke liye shoes perfect tha sab ko pasand aaya.
+104,roman_urdu,clear_positive,shoes performance smooth hai hang nahi hota.
+105,roman_urdu,clear_positive,Mein yeh shoes dobara kharidunga inshallah.
+106,roman_urdu,clear_negative,Yeh shoes bilkul bekaar hai.
+107,roman_urdu,clear_negative,shoes quality kharab hai ek din mein toot gaya.
+108,roman_urdu,clear_negative,shoes delivery late thi box bhi damage tha.
+109,roman_urdu,clear_negative,shoes battery bohat jaldi khatam ho jati hai.
+110,roman_urdu,clear_negative,Seller ne shoes ke bare mein reply nahi diya.
+111,roman_urdu,clear_negative,Fake shoes maal hai mat kharidna.
+112,roman_urdu,clear_negative,shoes size chota aaya size chart ghalat hai.
+113,roman_urdu,clear_negative,Mein is shoes purchase se khush nahi hun.
+114,roman_urdu,clear_negative,Return karna para shoes quality bohat buri thi.
+115,roman_urdu,clear_negative,Nahi yeh shoes lene ke qabil nahi.
+116,code_mixed,clear_positive,shoes quality bohat achi hai and delivery was fast.
+117,code_mixed,clear_positive,"Very happy with this shoes, zabardast experience."
+118,code_mixed,clear_positive,shoes packing secure thi and item exact as photos.
+119,code_mixed,clear_positive,Seller cooperative tha shoes issues jaldi resolve hue.
+120,code_mixed,clear_positive,Worth buying hai this shoes will order again.
+121,code_mixed,clear_positive,shoes performance smooth hai multitasking easy hai.
+122,code_mixed,clear_positive,Genuine shoes mila and quality looks premium.
+123,code_mixed,clear_positive,Overall experience positive tha with this shoes.
+124,code_mixed,clear_positive,shoes size bilkul sahi aaya comfortable for daily use.
+125,code_mixed,clear_positive,Arrived on time and shoes quality zabardast.
+126,code_mixed,clear_negative,shoes quality achi nahi hai and material feels cheap.
+127,code_mixed,clear_negative,"Not satisfied with shoes, bilkul waste of money."
+128,code_mixed,clear_negative,Delivery late thi and shoes bhi damaged aaya.
+129,code_mixed,clear_negative,Seller ne reply nahi diya about my shoes order.
+130,code_mixed,clear_negative,Fake shoes hai do not buy please original nahi mila.
+131,code_mixed,clear_negative,shoes battery drains fast hai very disappointing.
+132,code_mixed,clear_negative,Size chart misleading hai shoes too small aaya.
+133,code_mixed,clear_negative,Returned shoes because quality bohat kharab thi.
+134,code_mixed,clear_negative,Worst shoes experience ever kabhi nahi lunga dobara.
+135,code_mixed,clear_negative,Overpriced shoes hai and performance weak hai.
+136,english,negation,This shoes is not good at all.
+137,english,contrast,I like this shoes design but battery life is terrible.
+138,english,contrast_pos,Delivery was late but the shoes quality is excellent.
+139,english,sarcasm,"Oh wonderful, another broken shoes. Great service."
+140,roman_urdu,negation,Yeh shoes acha nahi hai bilkul.
+141,roman_urdu,contrast,shoes acha hai lekin quality kharab hai.
+142,roman_urdu,intensifier_pos,Bohat zabardast shoes hai kamaal quality.
+143,roman_urdu,intensifier_neg,Bohat bura shoes experience tha dobara nahi lunga.
+144,code_mixed,contrast,shoes quality achi hai but delivery late thi.
+145,code_mixed,contrast,Delivery late thi lekin shoes zabardast hai.
+146,code_mixed,negation,I am not happy with this shoes bilkul bekaar nikla.
+147,code_mixed,url_noise,Nice shoes check https://example.com/item147 @seller #deal
+148,code_mixed,punct_noise,!!! WORST shoes ??? never again.... packing ZERO!!!!
+149,code_mixed,informal_pos,Qlty of shoes zabrdast hai price bhi ok hy.
+150,code_mixed,informal_neg,Qlty of shoes kharab hai price bhi ziada hy.
+151,english,clear_positive,Excellent earbuds quality and fast delivery.
+152,english,clear_positive,"I love this earbuds, perfect fit and premium feel."
+153,english,clear_positive,"Great value earbuds, highly recommended."
+154,english,clear_positive,The earbuds works exactly as described.
+155,english,clear_positive,Very comfortable earbuds for daily use.
+156,english,clear_positive,Seller was helpful and the earbuds packaging was secure.
+157,english,clear_positive,"Perfect earbuds gift, everyone was delighted."
+158,english,clear_positive,Smooth earbuds performance with no lag.
+159,english,clear_positive,Bright display and responsive earbuds controls.
+160,english,clear_positive,"Worth buying this earbuds, will order again."
+161,english,clear_negative,"Terrible earbuds quality, broke after one day."
+162,english,clear_negative,"This earbuds is not good, waste of money."
+163,english,clear_negative,Late delivery and the earbuds box was damaged.
+164,english,clear_negative,"earbuds battery drains too fast, very disappointing."
+165,english,clear_negative,Cheap earbuds material and poor stitching.
+166,english,clear_negative,Seller ignored my messages about the earbuds.
+167,english,clear_negative,"Fake earbuds, do not buy."
+168,english,clear_negative,Returned the earbuds because quality is bad.
+169,english,clear_negative,Worst earbuds I have ever used.
+170,english,clear_negative,The earbuds does not work as advertised.
+171,roman_urdu,clear_positive,"Yeh earbuds bohat acha hai, mein khush hun."
+172,roman_urdu,clear_positive,earbuds quality zabardast hai packing bhi solid thi.
+173,roman_urdu,clear_positive,Seller ne earbuds jaldi deliver kiya shukriya.
+174,roman_urdu,clear_positive,earbuds battery timing kamaal hai charge jaldi hota hai.
+175,roman_urdu,clear_positive,earbuds size bilkul sahi aaya comfortable hai.
+176,roman_urdu,clear_positive,Original earbuds mila fragrance bhi lasting hai.
+177,roman_urdu,clear_positive,earbuds design stylish hai look premium lagta hai.
+178,roman_urdu,clear_positive,Gift ke liye earbuds perfect tha sab ko pasand aaya.
+179,roman_urdu,clear_positive,earbuds performance smooth hai hang nahi hota.
+180,roman_urdu,clear_positive,Mein yeh earbuds dobara kharidunga inshallah.
+181,roman_urdu,clear_negative,Yeh earbuds bilkul bekaar hai.
+182,roman_urdu,clear_negative,earbuds quality kharab hai ek din mein toot gaya.
+183,roman_urdu,clear_negative,earbuds delivery late thi box bhi damage tha.
+184,roman_urdu,clear_negative,earbuds battery bohat jaldi khatam ho jati hai.
+185,roman_urdu,clear_negative,Seller ne earbuds ke bare mein reply nahi diya.
+186,roman_urdu,clear_negative,Fake earbuds maal hai mat kharidna.
+187,roman_urdu,clear_negative,earbuds size chota aaya size chart ghalat hai.
+188,roman_urdu,clear_negative,Mein is earbuds purchase se khush nahi hun.
+189,roman_urdu,clear_negative,Return karna para earbuds quality bohat buri thi.
+190,roman_urdu,clear_negative,Nahi yeh earbuds lene ke qabil nahi.
+191,code_mixed,clear_positive,earbuds quality bohat achi hai and delivery was fast.
+192,code_mixed,clear_positive,"Very happy with this earbuds, zabardast experience."
+193,code_mixed,clear_positive,earbuds packing secure thi and item exact as photos.
+194,code_mixed,clear_positive,Seller cooperative tha earbuds issues jaldi resolve hue.
+195,code_mixed,clear_positive,Worth buying hai this earbuds will order again.
+196,code_mixed,clear_positive,earbuds performance smooth hai multitasking easy hai.
+197,code_mixed,clear_positive,Genuine earbuds mila and quality looks premium.
+198,code_mixed,clear_positive,Overall experience positive tha with this earbuds.
+199,code_mixed,clear_positive,earbuds size bilkul sahi aaya comfortable for daily use.
+200,code_mixed,clear_positive,Arrived on time and earbuds quality zabardast.
+201,code_mixed,clear_negative,earbuds quality achi nahi hai and material feels cheap.
+202,code_mixed,clear_negative,"Not satisfied with earbuds, bilkul waste of money."
+203,code_mixed,clear_negative,Delivery late thi and earbuds bhi damaged aaya.
+204,code_mixed,clear_negative,Seller ne reply nahi diya about my earbuds order.
+205,code_mixed,clear_negative,Fake earbuds hai do not buy please original nahi mila.
+206,code_mixed,clear_negative,earbuds battery drains fast hai very disappointing.
+207,code_mixed,clear_negative,Size chart misleading hai earbuds too small aaya.
+208,code_mixed,clear_negative,Returned earbuds because quality bohat kharab thi.
+209,code_mixed,clear_negative,Worst earbuds experience ever kabhi nahi lunga dobara.
+210,code_mixed,clear_negative,Overpriced earbuds hai and performance weak hai.
+211,english,negation,This earbuds is not good at all.
+212,english,contrast,I like this earbuds design but battery life is terrible.
+213,english,contrast_pos,Delivery was late but the earbuds quality is excellent.
+214,english,sarcasm,"Oh wonderful, another broken earbuds. Great service."
+215,roman_urdu,negation,Yeh earbuds acha nahi hai bilkul.
+216,roman_urdu,contrast,earbuds acha hai lekin quality kharab hai.
+217,roman_urdu,intensifier_pos,Bohat zabardast earbuds hai kamaal quality.
+218,roman_urdu,intensifier_neg,Bohat bura earbuds experience tha dobara nahi lunga.
+219,code_mixed,contrast,earbuds quality achi hai but delivery late thi.
+220,code_mixed,contrast,Delivery late thi lekin earbuds zabardast hai.
+221,code_mixed,negation,I am not happy with this earbuds bilkul bekaar nikla.
+222,code_mixed,url_noise,Nice earbuds check https://example.com/item222 @seller #deal
+223,code_mixed,punct_noise,!!! WORST earbuds ??? never again.... packing ZERO!!!!
+224,code_mixed,informal_pos,Qlty of earbuds zabrdast hai price bhi ok hy.
+225,code_mixed,informal_neg,Qlty of earbuds kharab hai price bhi ziada hy.
+226,english,clear_positive,Excellent charger quality and fast delivery.
+227,english,clear_positive,"I love this charger, perfect fit and premium feel."
+228,english,clear_positive,"Great value charger, highly recommended."
+229,english,clear_positive,The charger works exactly as described.
+230,english,clear_positive,Very comfortable charger for daily use.
+231,english,clear_positive,Seller was helpful and the charger packaging was secure.
+232,english,clear_positive,"Perfect charger gift, everyone was delighted."
+233,english,clear_positive,Smooth charger performance with no lag.
+234,english,clear_positive,Bright display and responsive charger controls.
+235,english,clear_positive,"Worth buying this charger, will order again."
+236,english,clear_negative,"Terrible charger quality, broke after one day."
+237,english,clear_negative,"This charger is not good, waste of money."
+238,english,clear_negative,Late delivery and the charger box was damaged.
+239,english,clear_negative,"charger battery drains too fast, very disappointing."
+240,english,clear_negative,Cheap charger material and poor stitching.
+241,english,clear_negative,Seller ignored my messages about the charger.
+242,english,clear_negative,"Fake charger, do not buy."
+243,english,clear_negative,Returned the charger because quality is bad.
+244,english,clear_negative,Worst charger I have ever used.
+245,english,clear_negative,The charger does not work as advertised.
+246,roman_urdu,clear_positive,"Yeh charger bohat acha hai, mein khush hun."
+247,roman_urdu,clear_positive,charger quality zabardast hai packing bhi solid thi.
+248,roman_urdu,clear_positive,Seller ne charger jaldi deliver kiya shukriya.
+249,roman_urdu,clear_positive,charger battery timing kamaal hai charge jaldi hota hai.
+250,roman_urdu,clear_positive,charger size bilkul sahi aaya comfortable hai.
+251,roman_urdu,clear_positive,Original charger mila fragrance bhi lasting hai.
+252,roman_urdu,clear_positive,charger design stylish hai look premium lagta hai.
+253,roman_urdu,clear_positive,Gift ke liye charger perfect tha sab ko pasand aaya.
+254,roman_urdu,clear_positive,charger performance smooth hai hang nahi hota.
+255,roman_urdu,clear_positive,Mein yeh charger dobara kharidunga inshallah.
+256,roman_urdu,clear_negative,Yeh charger bilkul bekaar hai.
+257,roman_urdu,clear_negative,charger quality kharab hai ek din mein toot gaya.
+258,roman_urdu,clear_negative,charger delivery late thi box bhi damage tha.
+259,roman_urdu,clear_negative,charger battery bohat jaldi khatam ho jati hai.
+260,roman_urdu,clear_negative,Seller ne charger ke bare mein reply nahi diya.
+261,roman_urdu,clear_negative,Fake charger maal hai mat kharidna.
+262,roman_urdu,clear_negative,charger size chota aaya size chart ghalat hai.
+263,roman_urdu,clear_negative,Mein is charger purchase se khush nahi hun.
+264,roman_urdu,clear_negative,Return karna para charger quality bohat buri thi.
+265,roman_urdu,clear_negative,Nahi yeh charger lene ke qabil nahi.
+266,code_mixed,clear_positive,charger quality bohat achi hai and delivery was fast.
+267,code_mixed,clear_positive,"Very happy with this charger, zabardast experience."
+268,code_mixed,clear_positive,charger packing secure thi and item exact as photos.
+269,code_mixed,clear_positive,Seller cooperative tha charger issues jaldi resolve hue.
+270,code_mixed,clear_positive,Worth buying hai this charger will order again.
+271,code_mixed,clear_positive,charger performance smooth hai multitasking easy hai.
+272,code_mixed,clear_positive,Genuine charger mila and quality looks premium.
+273,code_mixed,clear_positive,Overall experience positive tha with this charger.
+274,code_mixed,clear_positive,charger size bilkul sahi aaya comfortable for daily use.
+275,code_mixed,clear_positive,Arrived on time and charger quality zabardast.
+276,code_mixed,clear_negative,charger quality achi nahi hai and material feels cheap.
+277,code_mixed,clear_negative,"Not satisfied with charger, bilkul waste of money."
+278,code_mixed,clear_negative,Delivery late thi and charger bhi damaged aaya.
+279,code_mixed,clear_negative,Seller ne reply nahi diya about my charger order.
+280,code_mixed,clear_negative,Fake charger hai do not buy please original nahi mila.
+281,code_mixed,clear_negative,charger battery drains fast hai very disappointing.
+282,code_mixed,clear_negative,Size chart misleading hai charger too small aaya.
+283,code_mixed,clear_negative,Returned charger because quality bohat kharab thi.
+284,code_mixed,clear_negative,Worst charger experience ever kabhi nahi lunga dobara.
+285,code_mixed,clear_negative,Overpriced charger hai and performance weak hai.
+286,english,negation,This charger is not good at all.
+287,english,contrast,I like this charger design but battery life is terrible.
+288,english,contrast_pos,Delivery was late but the charger quality is excellent.
+289,english,sarcasm,"Oh wonderful, another broken charger. Great service."
+290,roman_urdu,negation,Yeh charger acha nahi hai bilkul.
+291,roman_urdu,contrast,charger acha hai lekin quality kharab hai.
+292,roman_urdu,intensifier_pos,Bohat zabardast charger hai kamaal quality.
+293,roman_urdu,intensifier_neg,Bohat bura charger experience tha dobara nahi lunga.
+294,code_mixed,contrast,charger quality achi hai but delivery late thi.
+295,code_mixed,contrast,Delivery late thi lekin charger zabardast hai.
+296,code_mixed,negation,I am not happy with this charger bilkul bekaar nikla.
+297,code_mixed,url_noise,Nice charger check https://example.com/item297 @seller #deal
+298,code_mixed,punct_noise,!!! WORST charger ??? never again.... packing ZERO!!!!
+299,code_mixed,informal_pos,Qlty of charger zabrdast hai price bhi ok hy.
+300,code_mixed,informal_neg,Qlty of charger kharab hai price bhi ziada hy.
+301,english,clear_positive,Excellent watch quality and fast delivery.
+302,english,clear_positive,"I love this watch, perfect fit and premium feel."
+303,english,clear_positive,"Great value watch, highly recommended."
+304,english,clear_positive,The watch works exactly as described.
+305,english,clear_positive,Very comfortable watch for daily use.
+306,english,clear_positive,Seller was helpful and the watch packaging was secure.
+307,english,clear_positive,"Perfect watch gift, everyone was delighted."
+308,english,clear_positive,Smooth watch performance with no lag.
+309,english,clear_positive,Bright display and responsive watch controls.
+310,english,clear_positive,"Worth buying this watch, will order again."
+311,english,clear_negative,"Terrible watch quality, broke after one day."
+312,english,clear_negative,"This watch is not good, waste of money."
+313,english,clear_negative,Late delivery and the watch box was damaged.
+314,english,clear_negative,"watch battery drains too fast, very disappointing."
+315,english,clear_negative,Cheap watch material and poor stitching.
+316,english,clear_negative,Seller ignored my messages about the watch.
+317,english,clear_negative,"Fake watch, do not buy."
+318,english,clear_negative,Returned the watch because quality is bad.
+319,english,clear_negative,Worst watch I have ever used.
+320,english,clear_negative,The watch does not work as advertised.
+321,roman_urdu,clear_positive,"Yeh watch bohat acha hai, mein khush hun."
+322,roman_urdu,clear_positive,watch quality zabardast hai packing bhi solid thi.
+323,roman_urdu,clear_positive,Seller ne watch jaldi deliver kiya shukriya.
+324,roman_urdu,clear_positive,watch battery timing kamaal hai charge jaldi hota hai.
+325,roman_urdu,clear_positive,watch size bilkul sahi aaya comfortable hai.
+326,roman_urdu,clear_positive,Original watch mila fragrance bhi lasting hai.
+327,roman_urdu,clear_positive,watch design stylish hai look premium lagta hai.
+328,roman_urdu,clear_positive,Gift ke liye watch perfect tha sab ko pasand aaya.
+329,roman_urdu,clear_positive,watch performance smooth hai hang nahi hota.
+330,roman_urdu,clear_positive,Mein yeh watch dobara kharidunga inshallah.
+331,roman_urdu,clear_negative,Yeh watch bilkul bekaar hai.
+332,roman_urdu,clear_negative,watch quality kharab hai ek din mein toot gaya.
+333,roman_urdu,clear_negative,watch delivery late thi box bhi damage tha.
+334,roman_urdu,clear_negative,watch battery bohat jaldi khatam ho jati hai.
+335,roman_urdu,clear_negative,Seller ne watch ke bare mein reply nahi diya.
+336,roman_urdu,clear_negative,Fake watch maal hai mat kharidna.
+337,roman_urdu,clear_negative,watch size chota aaya size chart ghalat hai.
+338,roman_urdu,clear_negative,Mein is watch purchase se khush nahi hun.
+339,roman_urdu,clear_negative,Return karna para watch quality bohat buri thi.
+340,roman_urdu,clear_negative,Nahi yeh watch lene ke qabil nahi.
+341,code_mixed,clear_positive,watch quality bohat achi hai and delivery was fast.
+342,code_mixed,clear_positive,"Very happy with this watch, zabardast experience."
+343,code_mixed,clear_positive,watch packing secure thi and item exact as photos.
+344,code_mixed,clear_positive,Seller cooperative tha watch issues jaldi resolve hue.
+345,code_mixed,clear_positive,Worth buying hai this watch will order again.
+346,code_mixed,clear_positive,watch performance smooth hai multitasking easy hai.
+347,code_mixed,clear_positive,Genuine watch mila and quality looks premium.
+348,code_mixed,clear_positive,Overall experience positive tha with this watch.
+349,code_mixed,clear_positive,watch size bilkul sahi aaya comfortable for daily use.
+350,code_mixed,clear_positive,Arrived on time and watch quality zabardast.
+351,code_mixed,clear_negative,watch quality achi nahi hai and material feels cheap.
+352,code_mixed,clear_negative,"Not satisfied with watch, bilkul waste of money."
+353,code_mixed,clear_negative,Delivery late thi and watch bhi damaged aaya.
+354,code_mixed,clear_negative,Seller ne reply nahi diya about my watch order.
+355,code_mixed,clear_negative,Fake watch hai do not buy please original nahi mila.
+356,code_mixed,clear_negative,watch battery drains fast hai very disappointing.
+357,code_mixed,clear_negative,Size chart misleading hai watch too small aaya.
+358,code_mixed,clear_negative,Returned watch because quality bohat kharab thi.
+359,code_mixed,clear_negative,Worst watch experience ever kabhi nahi lunga dobara.
+360,code_mixed,clear_negative,Overpriced watch hai and performance weak hai.
+361,english,negation,This watch is not good at all.
+362,english,contrast,I like this watch design but battery life is terrible.
+363,english,contrast_pos,Delivery was late but the watch quality is excellent.
+364,english,sarcasm,"Oh wonderful, another broken watch. Great service."
+365,roman_urdu,negation,Yeh watch acha nahi hai bilkul.
+366,roman_urdu,contrast,watch acha hai lekin quality kharab hai.
+367,roman_urdu,intensifier_pos,Bohat zabardast watch hai kamaal quality.
+368,roman_urdu,intensifier_neg,Bohat bura watch experience tha dobara nahi lunga.
+369,code_mixed,contrast,watch quality achi hai but delivery late thi.
+370,code_mixed,contrast,Delivery late thi lekin watch zabardast hai.
+371,code_mixed,negation,I am not happy with this watch bilkul bekaar nikla.
+372,code_mixed,url_noise,Nice watch check https://example.com/item372 @seller #deal
+373,code_mixed,punct_noise,!!! WORST watch ??? never again.... packing ZERO!!!!
+374,code_mixed,informal_pos,Qlty of watch zabrdast hai price bhi ok hy.
+375,code_mixed,informal_neg,Qlty of watch kharab hai price bhi ziada hy.
+376,english,clear_positive,Excellent bag quality and fast delivery.
+377,english,clear_positive,"I love this bag, perfect fit and premium feel."
+378,english,clear_positive,"Great value bag, highly recommended."
+379,english,clear_positive,The bag works exactly as described.
+380,english,clear_positive,Very comfortable bag for daily use.
+381,english,clear_positive,Seller was helpful and the bag packaging was secure.
+382,english,clear_positive,"Perfect bag gift, everyone was delighted."
+383,english,clear_positive,Smooth bag performance with no lag.
+384,english,clear_positive,Bright display and responsive bag controls.
+385,english,clear_positive,"Worth buying this bag, will order again."
+386,english,clear_negative,"Terrible bag quality, broke after one day."
+387,english,clear_negative,"This bag is not good, waste of money."
+388,english,clear_negative,Late delivery and the bag box was damaged.
+389,english,clear_negative,"bag battery drains too fast, very disappointing."
+390,english,clear_negative,Cheap bag material and poor stitching.
+391,english,clear_negative,Seller ignored my messages about the bag.
+392,english,clear_negative,"Fake bag, do not buy."
+393,english,clear_negative,Returned the bag because quality is bad.
+394,english,clear_negative,Worst bag I have ever used.
+395,english,clear_negative,The bag does not work as advertised.
+396,roman_urdu,clear_positive,"Yeh bag bohat acha hai, mein khush hun."
+397,roman_urdu,clear_positive,bag quality zabardast hai packing bhi solid thi.
+398,roman_urdu,clear_positive,Seller ne bag jaldi deliver kiya shukriya.
+399,roman_urdu,clear_positive,bag battery timing kamaal hai charge jaldi hota hai.
+400,roman_urdu,clear_positive,bag size bilkul sahi aaya comfortable hai.

@@ -1,0 +1,21 @@
+{
+  "holdout_size": 7038,
+  "majority_baseline_accuracy": 0.6157999431656721,
+  "logistic_regression": {
+    "model_name": "TF-IDF + Logistic Regression (calibrated)",
+    "accuracy": 0.8864734299516909,
+    "f1_macro": 0.8800638949766046,
+    "precision_macro": 0.8799849488447518,
+    "recall_macro": 0.8801432119227902,
+    "pr_auc_positive": 0.9739624878095183
+  },
+  "linearsvc": {
+    "model_name": "TF-IDF + LinearSVC (calibrated)",
+    "accuracy": 0.8904518329070759,
+    "f1_macro": 0.8845989509544616,
+    "precision_macro": 0.8834736402588499,
+    "recall_macro": 0.8858075373474632,
+    "pr_auc_positive": 0.9746838481773443
+  },
+  "preferred": "linearsvc"
+}
