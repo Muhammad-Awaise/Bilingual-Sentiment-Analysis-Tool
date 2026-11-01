@@ -22,18 +22,21 @@ _MENTION_RE = re.compile(r"@\w+")
 _HASHTAG_RE = re.compile(r"#(\w+)", re.UNICODE)
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
 _WHITESPACE_RE = re.compile(r"\s+", re.UNICODE)
-# Keep Latin letters/digits/apostrophe AND Arabic / Urdu script letters & marks.
-# Strips emoji and most punctuation while preserving Nastaliq review text.
+# Keep Latin letters/digits/apostrophe AND Arabic / Urdu *letters* + diacritics.
+# Intentionally excludes Arabic punctuation (، ؛ ؟ ۔) so TF-IDF tokens stay clean.
 _NON_TEXT_RE = re.compile(
     r"[^a-z0-9'\s"
-    r"\u0600-\u06FF"  # Arabic
+    r"\u0621-\u063A\u0641-\u064A"  # Arabic letters
+    r"\u064B-\u065F"  # Arabic diacritics / tatweel-adjacent marks
+    r"\u066E-\u06D3"  # Extended Arabic / Urdu letters (incl. ے ہ ھ)
+    r"\u06FA-\u06FF"  # Arabic more extended
     r"\u0750-\u077F"  # Arabic Supplement
     r"\u08A0-\u08FF"  # Arabic Extended-A
-    r"\uFB50-\uFDFF"  # Arabic Presentation Forms-A
-    r"\uFE70-\uFEFF"  # Arabic Presentation Forms-B
     r"]+",
     re.UNICODE,
 )
+# Extra pass for common Arabic/Urdu punctuation that may still appear
+_ARABIC_PUNCT_RE = re.compile(r"[\u060C\u061B\u061F\u06D4\u066A\u066B\u066C\u066D]+")
 
 # Closed-set informal Roman Urdu negation spellings → canonical "nahi"
 # Intentionally narrow: does not invent broad phonetic normalization.
@@ -111,6 +114,7 @@ def clean_text(text: Any) -> str:
     text = _MENTION_RE.sub(" ", text)
     # Keep hashtag word content (often product tags) without the '#'
     text = _HASHTAG_RE.sub(r"\1", text)
+    text = _ARABIC_PUNCT_RE.sub(" ", text)
     text = _NON_TEXT_RE.sub(" ", text)
     text = _WHITESPACE_RE.sub(" ", text).strip()
     if not text:

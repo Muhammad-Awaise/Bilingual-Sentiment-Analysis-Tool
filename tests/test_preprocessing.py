@@ -92,6 +92,14 @@ def test_urdu_script_preserved():
     assert out.strip() != ""
 
 
+def test_urdu_punctuation_stripped():
+    out = clean_text("سیلر نے جلدی ڈیلیور کیا، سائز بالکل درست آیا، میں بہت خوش ہوں۔")
+    assert "،" not in out
+    assert "۔" not in out
+    assert "خوش" in out
+    assert "ڈیلیور" in out
+
+
 def test_urdu_contrast_preserved():
     out = clean_text("اچھا ہے لیکن کوالٹی خراب ہے")
     assert "لیکن" in out

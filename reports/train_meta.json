@@ -2,19 +2,21 @@
   "artifact_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\models\\sentiment_pipeline.joblib",
   "split_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\reports\\holdout_split.joblib",
   "model_name": "TF-IDF + LinearSVC (calibrated)",
-  "train_size": 28150,
-  "test_size": 7038,
+  "train_size": 28606,
+  "test_size": 7045,
   "class_counts": {
-    "positive": 21667,
-    "negative": 13521
+    "positive": 21677,
+    "negative": 13529,
+    "neutral": 18
   },
   "language_counts": {
-    "code_mixed": 15884,
-    "roman_urdu": 14988,
-    "english": 3696,
-    "unknown": 620
+    "code_mixed": 15886,
+    "roman_urdu": 14993,
+    "english": 3701,
+    "unknown": 620,
+    "urdu": 24
   },
-  "majority_baseline_accuracy_on_test": 0.6157999431656721,
+  "majority_baseline_accuracy_on_test": 0.6153300212916962,
   "calibrated": true,
   "tuned": false,
   "data_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\data\\processed\\reviews_train_expanded.csv",

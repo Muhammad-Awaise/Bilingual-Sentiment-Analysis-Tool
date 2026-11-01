@@ -53,6 +53,9 @@ def _augment_with_curated_urdu_and_neutral(df):
     """
     When training on the expanded binary CSV, also fold in curated rows that
     carry Neutral labels or Urdu-script text so those classes/features exist.
+
+    Unique rows only here — oversampling happens on the train split after
+    stratified holdout to avoid train/test leakage.
     """
     import pandas as pd
 
@@ -71,11 +74,31 @@ def _augment_with_curated_urdu_and_neutral(df):
         return df
 
     merged = pd.concat([df, extra], ignore_index=True)
-    merged["_dedupe"] = (
-        merged[TEXT_COLUMN].astype(str).str.strip().str.lower()
-    )
+    merged["_dedupe"] = merged[TEXT_COLUMN].astype(str).str.strip().str.lower()
     merged = merged.drop_duplicates(subset=["_dedupe"], keep="first")
     return merged.drop(columns=["_dedupe"]).reset_index(drop=True)
+
+
+def _oversample_rare_train_rows(train_df):
+    """Repeat Neutral / Urdu rows in *train only* so rare classes are learnable."""
+    import pandas as pd
+
+    if train_df is None or train_df.empty:
+        return train_df
+
+    neutral = train_df[train_df[LABEL_COLUMN] == LABEL_NEUTRAL]
+    urdu = train_df[
+        (train_df[LANGUAGE_COLUMN].astype(str).str.lower() == "urdu")
+        & (train_df[LABEL_COLUMN] != LABEL_NEUTRAL)
+    ]
+    parts = [train_df]
+    if not neutral.empty:
+        parts.append(pd.concat([neutral] * 24, ignore_index=True))
+    if not urdu.empty:
+        parts.append(pd.concat([urdu] * 7, ignore_index=True))
+    if len(parts) == 1:
+        return train_df
+    return pd.concat(parts, ignore_index=True)
 
 
 def build_pipeline(
@@ -231,6 +254,7 @@ def train_and_save(
 
     train_df, test_df = stratified_split(df)
     assert_no_text_leakage(train_df, test_df)
+    train_df = _oversample_rare_train_rows(train_df)
 
     X_train = train_df[TEXT_COLUMN].tolist()
     y_train = train_df[LABEL_COLUMN].tolist()

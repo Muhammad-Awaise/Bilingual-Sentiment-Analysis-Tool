@@ -92,18 +92,18 @@ def _apply_neutral_if_uncertain(
     pipeline,
 ) -> str:
     """
-    Keep trained neutral predictions. On older binary artifacts, map low
-    max-probability scores to neutral so mixed / Urdu-script / sparse inputs
-    are not forced into positive or negative.
+    Keep trained neutral predictions. Also map low max-probability scores to
+    neutral so mixed / sparse / Urdu-script inputs are not forced into
+    positive or negative when the model is unsure.
     """
     pred = str(prediction)
     if pred == LABEL_NEUTRAL:
         return LABEL_NEUTRAL
-    if LABEL_NEUTRAL in _model_classes(pipeline):
-        return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
     if model_score is not None and float(model_score) < NEUTRAL_CONFIDENCE_MAX:
         return LABEL_NEUTRAL
-    return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
+    if pred in SUPPORTED_LABELS:
+        return pred
+    return LABEL_NEUTRAL
 
 
 def predict_one(
