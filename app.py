@@ -776,7 +776,7 @@ dissatisfaction on a key feature. Humans can disagree; the probe documents a
 |------|------------------------|
 | Transparency | Features are n-grams you can inspect |
 | Reproducibility | Seeded splits, saved holdout, metrics written from predictions |
-| CPU / offline | No GPU, no paid API, no LLM required to predict |
+| CPU / offline | No GPU, no commercial API, no LLM required to predict |
 | Link errors to linguistics | Failures map to negation / contrast / spelling probes |
 
 #### Leakage controls
