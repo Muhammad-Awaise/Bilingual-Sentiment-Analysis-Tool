@@ -1,0 +1,71 @@
+# Separate from CI: pings Streamlit Community Cloud so the free app
+# is less likely to hibernate after ~12h without traffic.
+#
+# Notes:
+# - Keeps an already-awake app active; does not reliably wake a sleeping app.
+# - If the app is asleep, open the URL once and click "Yes, get this app back up!"
+# - Schedule is every 8 hours (UTC) so pings stay under the 12h inactivity window.
+
+name: Streamlit keep-alive
+
+on:
+  schedule:
+    # 00:00, 08:00, 16:00 UTC (~every 8 hours)
+    - cron: "0 */8 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: streamlit-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping Streamlit app
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: HTTP ping
+        env:
+          APP_URL: "https://bilingual-sentiment-analysis-tool.streamlit.app/"
+        run: |
+          set -euo pipefail
+
+          echo "Pinging: ${APP_URL}"
+          echo "Time (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          # Quiet GET with timeouts + a few retries. Follow redirects.
+          # Body goes to a temp file so we can detect the sleep interstitial.
+          BODY="$(mktemp)"
+          trap 'rm -f "${BODY}"' EXIT
+
+          HTTP_CODE="$(
+            curl -sS -L \
+              --connect-timeout 20 \
+              --max-time 60 \
+              --retry 3 \
+              --retry-delay 5 \
+              --retry-all-errors \
+              -A "BilingualSentimentKeepAlive/1.0 (+github-actions)" \
+              -o "${BODY}" \
+              -w "%{http_code}" \
+              "${APP_URL}"
+          )"
+
+          echo "HTTP status: ${HTTP_CODE}"
+          BYTES="$(wc -c < "${BODY}" | tr -d ' ')"
+          echo "Response bytes: ${BYTES}"
+
+          if [[ "${HTTP_CODE}" != "200" && "${HTTP_CODE}" != "302" && "${HTTP_CODE}" != "304" ]]; then
+            echo "::error::Unexpected HTTP status ${HTTP_CODE} from Streamlit app"
+            head -c 500 "${BODY}" || true
+            exit 1
+          fi
+
+          # Streamlit sleep page often mentions inactivity / wake-up copy.
+          if grep -qiE "gone to sleep|get this app back up|app has gone to sleep" "${BODY}"; then
+            echo "::warning::App appears to be sleeping. A ping alone usually cannot wake it."
+            echo "Open ${APP_URL} in a browser and click \"Yes, get this app back up!\""
+            exit 1
+          fi
+
+          echo "Keep-alive ping completed successfully."
