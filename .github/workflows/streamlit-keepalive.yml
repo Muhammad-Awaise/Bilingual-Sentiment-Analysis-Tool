@@ -5,6 +5,7 @@
 # - Keeps an already-awake app active; does not reliably wake a sleeping app.
 # - If the app is asleep, open the URL once and click "Yes, get this app back up!"
 # - Schedule is every 8 hours (UTC) so pings stay under the 12h inactivity window.
+# - Do not use bare curl -L without a cookie jar: Streamlit often redirect-loops (curl 47).
 
 name: Streamlit keep-alive
 
@@ -27,41 +28,70 @@ jobs:
       - name: HTTP ping
         env:
           APP_URL: "https://bilingual-sentiment-analysis-tool.streamlit.app/"
+          # Browser-like UA; bot UAs can get odd redirect behavior on Streamlit Cloud.
+          USER_AGENT: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         run: |
           set -euo pipefail
 
           echo "Pinging: ${APP_URL}"
           echo "Time (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-          # Quiet GET with timeouts + a few retries. Follow redirects.
-          # Body goes to a temp file so we can detect the sleep interstitial.
           BODY="$(mktemp)"
-          trap 'rm -f "${BODY}"' EXIT
+          COOKIES="$(mktemp)"
+          trap 'rm -f "${BODY}" "${COOKIES}"' EXIT
 
+          # Primary: cookie jar + limited redirects (fixes Streamlit redirect loops).
+          set +e
           HTTP_CODE="$(
-            curl -sS -L \
+            curl -sS \
+              -c "${COOKIES}" -b "${COOKIES}" \
+              -L --max-redirs 15 \
               --connect-timeout 20 \
               --max-time 60 \
-              --retry 3 \
-              --retry-delay 5 \
-              --retry-all-errors \
-              -A "BilingualSentimentKeepAlive/1.0 (+github-actions)" \
+              -A "${USER_AGENT}" \
+              -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
               -o "${BODY}" \
               -w "%{http_code}" \
               "${APP_URL}"
           )"
+          CURL_EC=$?
+          set -e
+
+          if [[ "${CURL_EC}" -ne 0 ]]; then
+            echo "::warning::Follow-redirects ping failed (curl exit ${CURL_EC}). Falling back to no-follow ping."
+
+            # Fallback: any reach of the host is enough for keep-alive traffic.
+            # Do not follow redirects — avoids curl error 47 (max redirects).
+            set +e
+            HTTP_CODE="$(
+              curl -sS \
+                --connect-timeout 20 \
+                --max-time 30 \
+                -A "${USER_AGENT}" \
+                -o "${BODY}" \
+                -w "%{http_code}" \
+                "${APP_URL}"
+            )"
+            CURL_EC=$?
+            set -e
+
+            if [[ "${CURL_EC}" -ne 0 ]]; then
+              echo "::error::Keep-alive ping failed (curl exit ${CURL_EC})"
+              exit "${CURL_EC}"
+            fi
+          fi
 
           echo "HTTP status: ${HTTP_CODE}"
           BYTES="$(wc -c < "${BODY}" | tr -d ' ')"
           echo "Response bytes: ${BYTES}"
 
-          if [[ "${HTTP_CODE}" != "200" && "${HTTP_CODE}" != "302" && "${HTTP_CODE}" != "304" ]]; then
+          # 2xx / 3xx means we reached Streamlit; that is enough to count as traffic.
+          if [[ ! "${HTTP_CODE}" =~ ^[23][0-9][0-9]$ ]]; then
             echo "::error::Unexpected HTTP status ${HTTP_CODE} from Streamlit app"
             head -c 500 "${BODY}" || true
             exit 1
           fi
 
-          # Streamlit sleep page often mentions inactivity / wake-up copy.
           if grep -qiE "gone to sleep|get this app back up|app has gone to sleep" "${BODY}"; then
             echo "::warning::App appears to be sleeping. A ping alone usually cannot wake it."
             echo "Open ${APP_URL} in a browser and click \"Yes, get this app back up!\""
