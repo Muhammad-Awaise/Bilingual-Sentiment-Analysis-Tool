@@ -48,13 +48,22 @@ def _finite_or_raise(name: str, value: float) -> float:
 
 def compute_metrics(y_true, y_pred, labels: list[str] | None = None) -> dict[str, Any]:
     """Compute accuracy, precision, recall, macro F1, and confusion matrix."""
-    label_list = labels or list(LABEL_ORDER)
     y_true = list(y_true)
     y_pred = list(y_pred)
     if len(y_true) != len(y_pred):
         raise EvaluationError("y_true and y_pred length mismatch.")
     if not y_true:
         raise EvaluationError("Cannot evaluate empty prediction lists.")
+
+    if labels is not None:
+        label_list = list(labels)
+    else:
+        # Use LABEL_ORDER, but skip classes absent from both sides so a
+        # binary-only batch is not diluted by an empty Neutral column.
+        present = {str(x) for x in y_true} | {str(x) for x in y_pred}
+        label_list = [lab for lab in LABEL_ORDER if lab in present]
+        if not label_list:
+            label_list = list(LABEL_ORDER)
 
     cm = confusion_matrix(y_true, y_pred, labels=label_list)
     metrics = {
