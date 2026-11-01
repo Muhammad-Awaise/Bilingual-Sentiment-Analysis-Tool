@@ -217,10 +217,29 @@ def _emphasize_contrast_clause(text: str) -> str:
     return f"__contrast__ {marker}"
 
 
+_NEGATION_TOKENS = frozenset(
+    {
+        "not",
+        "no",
+        "never",
+        "n't",
+        "nahi",
+        "mat",
+        "na",
+        "نہیں",
+        "نہ",
+        "مت",
+    }
+)
+
+
 def _emphasize_polarity_intensity(text: str) -> str:
     """
     Repeat strong polarity tokens (and mark intensifiers) so bag-of-ngrams
     reflects word intensity without a separate neural intensity head.
+
+    If a positive cue is locally negated (*khush nahi* / *خوش نہیں*), boost
+    negative intensity instead of positive.
     """
     tokens = text.split()
     if not tokens:
@@ -229,6 +248,8 @@ def _emphasize_polarity_intensity(text: str) -> str:
     for i, tok in enumerate(tokens):
         out.append(tok)
         prev = tokens[i - 1] if i else ""
+        nxt = tokens[i + 1] if i + 1 < len(tokens) else ""
+        locally_negated = prev in _NEGATION_TOKENS or nxt in _NEGATION_TOKENS
         boosted = False
         if tok in _STRONG_NEGATIVE:
             reps = 2 + (1 if prev in _INTENSIFIERS else 0)
@@ -238,9 +259,12 @@ def _emphasize_polarity_intensity(text: str) -> str:
         elif tok in _STRONG_POSITIVE:
             reps = 2 + (1 if prev in _INTENSIFIERS else 0)
             out.extend([tok] * reps)
-            out.append("__pos_intense__")
+            if locally_negated:
+                out.append("__neg_intense__")
+            else:
+                out.append("__pos_intense__")
             boosted = True
-        elif tok in _NEUTRAL_CUES:
+        elif tok in _NEUTRAL_CUES and not locally_negated:
             out.append(tok)
             out.append("__neutral_cue__")
             boosted = True
