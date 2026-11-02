@@ -39,57 +39,88 @@ def format_single_result_csv(result: dict[str, Any]) -> pd.DataFrame:
     )
 
 
-# Columns produced by a previous export / predict pass. Drop before rebuilding
-# so re-uploading "*_predictions.csv" does not create duplicate column names.
-_STALE_EXPORT_COLUMNS = (
-    "row_number",
-    "predicted_sentiment",
-    "model_score_not_probability",
-    "cleaned_review_text",
-    # Keep org schema columns (text/label/language/…). Fresh predict_* cols below
-    # are renamed onto the export names after this drop.
+# Prediction / export artifact names (any prior upload may already contain these).
+_PREDICTION_ARTIFACT_NAMES = frozenset(
+    {
+        "row_number",
+        "prediction",
+        "predicted_sentiment",
+        "model_score",
+        "model_score_not_probability",
+        "cleaned_text",
+        "cleaned_review_text",
+        "model_name",
+        "score_note",
+        "limitations",
+    }
 )
+
+
+def _as_series(frame: pd.DataFrame, *names: str) -> pd.Series | None:
+    """Return the last matching column as a 1-d Series (never a DataFrame)."""
+    lower = {str(c).strip().lower(): c for c in frame.columns}
+    for name in names:
+        key = str(name).strip().lower()
+        if key not in lower:
+            continue
+        col = frame[lower[key]]
+        if isinstance(col, pd.DataFrame):
+            col = col.iloc[:, -1]
+        return col
+    return None
 
 
 def format_predictions_csv(result: pd.DataFrame, text_column: str) -> pd.DataFrame:
     """
     Build a clean, Excel-friendly results table.
 
-    - Stable column order
-    - Clear prediction column names
-    - Rounded model scores
-    - Leading row_number for easy lookup
-    - Safe to re-run on a previous predictions CSV
+    Safe for re-uploads of previous ``*_predictions.csv`` files: never calls
+    ``DataFrame.insert`` on a column that already exists. Rebuilds export
+    columns from scratch so label/text/org columns are preserved.
     """
-    out = result.copy()
-    # Drop stale export names so rename(prediction→predicted_sentiment) cannot
-    # create duplicate columns (which makes out[col] a DataFrame, not a Series).
-    drop_cols = [c for c in _STALE_EXPORT_COLUMNS if c in out.columns]
-    if drop_cols:
-        out = out.drop(columns=drop_cols)
+    if result is None or result.empty:
+        return pd.DataFrame(columns=["row_number"])
 
-    out.insert(0, "row_number", range(1, len(out) + 1))
+    src = result.copy()
+    # Collapse accidental duplicate column names (keep last = freshest predict)
+    if src.columns.duplicated().any():
+        src = src.loc[:, ~src.columns.duplicated(keep="last")]
 
-    rename = {
-        "prediction": "predicted_sentiment",
-        "model_score": "model_score_not_probability",
-        "cleaned_text": "cleaned_review_text",
-    }
-    out = out.rename(columns={k: v for k, v in rename.items() if k in out.columns})
+    pred = _as_series(src, "prediction", "predicted_sentiment")
+    score = _as_series(src, "model_score", "model_score_not_probability")
+    cleaned = _as_series(src, "cleaned_text", "cleaned_review_text")
+    model = _as_series(src, "model_name")
 
-    if "model_score_not_probability" in out.columns:
-        score_col = out["model_score_not_probability"]
-        # Guard: if duplicates somehow remain, keep the last (fresh) series
-        if isinstance(score_col, pd.DataFrame):
-            score_col = score_col.iloc[:, -1]
+    # Keep original org columns (text, label, language, …); strip artifacts
+    org_cols = [
+        c
+        for c in src.columns
+        if str(c).strip().lower() not in _PREDICTION_ARTIFACT_NAMES
+    ]
+    out = src[org_cols].copy() if org_cols else pd.DataFrame(index=src.index)
+
+    # Always assign (overwrite) — never insert into an existing name
+    out["row_number"] = range(1, len(out) + 1)
+    if pred is not None:
+        out["predicted_sentiment"] = pred.values
+    if score is not None:
         out["model_score_not_probability"] = pd.to_numeric(
-            score_col, errors="coerce"
-        ).round(4)
+            score, errors="coerce"
+        ).round(4).values
+    if cleaned is not None:
+        out["cleaned_review_text"] = cleaned.values
+    if model is not None:
+        out["model_name"] = model.values
 
-    # Prefer a readable alias for the source text column when it is generic
+    # Stable column order
     preferred_front = ["row_number"]
-    if text_column in out.columns and text_column not in preferred_front:
-        preferred_front.append(text_column)
+    text_key = str(text_column).strip().lower()
+    text_actual = next(
+        (c for c in out.columns if str(c).strip().lower() == text_key),
+        text_column if text_column in out.columns else None,
+    )
+    if text_actual is not None and text_actual not in preferred_front:
+        preferred_front.append(text_actual)
 
     trailing = [
         c
@@ -102,7 +133,10 @@ def format_predictions_csv(result: pd.DataFrame, text_column: str) -> pd.DataFra
         if c in out.columns
     ]
     middle = [c for c in out.columns if c not in preferred_front and c not in trailing]
-    return out[preferred_front + middle + trailing]
+    ordered = out[preferred_front + middle + trailing]
+    # Final safety: row_number first
+    cols = ["row_number"] + [c for c in ordered.columns if c != "row_number"]
+    return ordered[cols]
 
 
 def format_summary_csv(predictions: pd.Series | list[str]) -> pd.DataFrame:
@@ -206,7 +240,10 @@ def build_results_zip(
     separate download buttons.
     """
     formatted = format_predictions_csv(result, text_column)
-    summary = format_summary_csv(result["prediction"])
+    pred_series = _as_series(result, "prediction", "predicted_sentiment")
+    if pred_series is None:
+        pred_series = pd.Series(dtype=object)
+    summary = format_summary_csv(pred_series)
     chart_png = render_distribution_chart_png(summary)
 
     predictions_csv = dataframe_to_csv_bytes(formatted)

@@ -72,6 +72,32 @@ def test_format_predictions_reupload_full_export_schema(trained_artifact: Path):
     assert formatted.columns.tolist().count("predicted_sentiment") == 1
     assert formatted.columns.tolist().count("model_score_not_probability") == 1
     assert isinstance(formatted["model_score_not_probability"], pd.Series)
+    # Org gold label preserved for evaluation
+    assert "label" in formatted.columns
+    zip_bytes, meta = build_results_zip(result, "text")
+    assert len(zip_bytes) > 0
+    assert meta["formatted_df"] is not None
+
+
+def test_format_predictions_never_raises_on_existing_row_number():
+    """Direct format path: existing row_number must not raise ValueError."""
+    df = pd.DataFrame(
+        {
+            "row_number": [99, 100],
+            "text": ["a", "b"],
+            "label": ["positive", "negative"],
+            "prediction": ["positive", "negative"],
+            "model_score": [0.9, 0.1],
+            "cleaned_text": ["a", "b"],
+            "model_name": ["m", "m"],
+            "predicted_sentiment": ["positive", "negative"],
+            "model_score_not_probability": [0.9, 0.1],
+            "cleaned_review_text": ["a", "b"],
+        }
+    )
+    formatted = format_predictions_csv(df, "text")
+    assert list(formatted["row_number"]) == [1, 2]
+    assert "label" in formatted.columns
 
 
 def test_summary_has_total_row(trained_artifact: Path):

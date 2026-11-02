@@ -362,10 +362,35 @@ def predict_dataframe(
         raise PredictionError(
             f"Column '{text_column}' not found. Available: {list(df.columns)}"
         )
-    texts = df[text_column].tolist()
+    # If text_column is duplicated, take the first series
+    text_values = df[text_column]
+    if isinstance(text_values, pd.DataFrame):
+        text_values = text_values.iloc[:, 0]
+    texts = text_values.tolist()
     result = predict_batch(texts, artifact_path=artifact_path, payload=payload)
-    # Preserve original columns + predictions
+
     out = df.copy()
+    if out.columns.duplicated().any():
+        out = out.loc[:, ~out.columns.duplicated(keep="last")]
+
+    # Strip prior prediction/export artifacts so re-uploads never collide
+    stale = {
+        "row_number",
+        "cleaned_text",
+        "cleaned_review_text",
+        "prediction",
+        "predicted_sentiment",
+        "model_score",
+        "model_score_not_probability",
+        "model_name",
+        "score_note",
+        "limitations",
+    }
+    drop = [c for c in out.columns if str(c).strip().lower() in stale]
+    if drop:
+        out = out.drop(columns=drop)
+
+    # Assign fresh predictions (overwrite-safe; columns were removed above)
     out["cleaned_text"] = result["cleaned_text"].values
     out["prediction"] = result["prediction"].values
     out["model_score"] = result["model_score"].values

@@ -79,10 +79,14 @@ def _find_gold_column(df: pd.DataFrame) -> str | None:
         "cleaned_review_text",
         "cleaned_text",
         "model_name",
+        "row_number",
+        "score_note",
+        "limitations",
     }
     for name in LABEL_COLUMN_CANDIDATES:
-        if name in lower_map and name not in skip:
-            return lower_map[name]
+        key = str(name).strip().lower()
+        if key in lower_map and key not in skip:
+            return lower_map[key]
     return None
 
 
@@ -101,22 +105,41 @@ def _confusion_counts_table(cm, labels) -> pd.DataFrame:
 
 def _metrics_from_batch_result(result: pd.DataFrame) -> dict | None:
     """If batch output has gold labels, compute evaluation vs predictions."""
-    if result is None or result.empty or "prediction" not in result.columns:
+    if result is None or result.empty:
+        return None
+    pred_col = next(
+        (
+            c
+            for c in ("prediction", "predicted_sentiment")
+            if c in result.columns
+        ),
+        None,
+    )
+    if pred_col is None:
         return None
     gold_col = _find_gold_column(result)
     if gold_col is None:
         return None
 
     working = result.copy()
-    working["_gold"] = working[gold_col].map(normalize_label)
+    gold_vals = working[gold_col]
+    if isinstance(gold_vals, pd.DataFrame):
+        gold_vals = gold_vals.iloc[:, 0]
+    pred_vals = working[pred_col]
+    if isinstance(pred_vals, pd.DataFrame):
+        pred_vals = pred_vals.iloc[:, -1]
+    working["_gold"] = gold_vals.map(normalize_label)
+    working["_pred"] = pred_vals.map(
+        lambda v: str(v).strip().lower() if v is not None else None
+    )
     working = working[working["_gold"].isin(LABEL_ORDER)]
-    working = working[working["prediction"].isin(LABEL_ORDER)]
+    working = working[working["_pred"].isin(LABEL_ORDER)]
     if working.empty:
         return None
 
     metrics = compute_metrics(
         working["_gold"].tolist(),
-        working["prediction"].tolist(),
+        working["_pred"].tolist(),
         labels=list(LABEL_ORDER),
     )
     metrics["n_compared"] = len(working)
