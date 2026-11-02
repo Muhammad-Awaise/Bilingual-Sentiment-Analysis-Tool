@@ -640,20 +640,21 @@ def page_research() -> None:
         """
 ### Research question
 
-> How do **negation**, **code-switching**, and **informal Roman Urdu spelling**
-> affect the performance of sentiment classification models on bilingual
-> **product reviews**?
+> How do **negation**, **code-switching**, **informal Roman Urdu spelling**,
+> and **Urdu-script (نستعلیق) reviews** affect sentiment classification on
+> bilingual **product reviews**?
 
 **Why this question?** E-commerce reviews in South Asian markets are not clean
-English. Shoppers write Roman Urdu, switch languages mid-sentence, negate with
-unstable spellings, and place the real judgment after *but* / *lekin*. A model
-that only “works on English adjectives” is not answering the linguistic problem.
+English. Shoppers write Roman Urdu, Urdu script, switch languages mid-sentence,
+negate with unstable spellings, and place the real judgment after *but* / *lekin*.
+A model that only “works on English adjectives” — or that collapses every
+Nastaliq row to a constant prior — is not answering the linguistic problem.
 
 **Disciplinary bridge**
 - **English Linguistics:** polarity, negation scope, contrastive discourse,
-  orthographic variation, language contact / code-switching
-- **Computational methods:** bag-of-n-grams features, linear classifiers,
-  leakage-safe evaluation, qualitative error analysis on linguistic probes
+  orthographic variation, language contact / code-switching, script choice
+- **Computational methods:** word + character n-grams, linear classifiers,
+  leakage-safe evaluation, flexible org-data ingest, qualitative probes
 """
     )
 
@@ -683,27 +684,31 @@ reference scripts may still drop Neutral when building binary-only test CSVs.
 """
         )
 
-    with st.expander("2. Why bilingual / Roman Urdu / code-mixed reviews?", expanded=True):
+    with st.expander("2. Why bilingual / Roman Urdu / Urdu-script / code-mixed?", expanded=True):
         st.markdown(
             """
-#### Three language situations in one marketplace genre
+#### Four language situations in one marketplace genre
 
 | Situation | Example | Linguistic issue |
 |-----------|---------|------------------|
 | English | *Excellent quality and fast delivery* | Familiar polarity lexicon |
 | Roman Urdu | *Product bohat acha hai* | Urdu morphology/lexicon in Latin script |
+| Urdu script | *یہ پروڈکٹ بہت اچھی ہے* | Same polarity cues in Arabic script (نستعلیق) |
 | Code-mixed | *Quality achi hai but delivery late thi* | Contact: two systems in one utterance |
 
-#### Why English-only tools struggle
+#### Why English-only / Latin-only tools struggle
 Tokenizers and lexicons trained on standard English see Roman Urdu forms as rare
-or OOV. Intensifiers (*bohat*), negation (*nahi*), and contrast (*lekin*) may be
-down-weighted or deleted. From a linguistics view, that discarded material is
-**evidence of variation and contact** — exactly what we want to keep visible.
+or OOV. Intensifiers (*bohat* / *بہت*), negation (*nahi* / *نہیں*), and contrast
+(*lekin* / *لیکن*) may be down-weighted or deleted. If Arabic letters are stripped,
+Urdu-script reviews become **empty vectors** and every row can collapse to the same
+weak prior (historically a flat ~0.53 “negative”). From a linguistics view, that
+discarded material is **evidence of variation, script choice, and contact** —
+exactly what we want to keep visible.
 
 #### Product-review genre matters
 Reviews are short, evaluative, often clause-chained (*X was fine but Y failed*).
 That makes **negation** and **contrast** unusually frequent relative to news text,
-and makes bag-of-n-grams a reasonable first computational baseline for studying them.
+and makes n-gram baselines a reasonable first computational setup for studying them.
 """
         )
 
@@ -727,6 +732,7 @@ Negation can reverse the polarity contribution of nearby evaluative words
 #### Computational design that protects the phenomenon
 - **Preserve** English: *not*, *no*
 - **Preserve** Roman Urdu: *nahi* (plus closed-set spelling map), *mat*, *na*
+- **Preserve** Urdu script: *نہیں*, *نہ*, *مت* (and related polarity lexicon)
 - **Do not** apply a large stopword purge that deletes these cues
 
 #### Contrast with a common baseline mistake
@@ -742,14 +748,15 @@ that policy (documented in `docs/REFERENCE_ANALYSIS.md` and
         st.markdown(
             """
 #### Linguistic idea
-Contrastive connectives (*but*, *lekin*, *magar*, *however*, *though*) often mark
-that the **speaker’s final stance** is in the second clause, even if the first
-clause contains positive adjectives.
+Contrastive connectives (*but*, *lekin*, *magar*, *however*, *though*,
+*لیکن*, *مگر*) often mark that the **speaker’s final stance** is in the second
+clause, even if the first clause contains positive adjectives.
 
 | Example | Surface positives | Verdict clause | Expected |
 |---------|-------------------|----------------|----------|
 | *Product acha hai **lekin** quality kharab hai* | *acha* | *quality kharab* | negative |
 | *Quality achi hai **but** delivery late thi* | *achi* | *delivery late* | negative |
+| *اچھا ہے **لیکن** کوالٹی خراب ہے* | *اچھا* | *کوالٹی خراب* | negative |
 | *Looks cheap **but** feels premium* | *cheap* | *feels premium* | positive |
 
 #### Why bag-of-words alone is fragile here
@@ -812,10 +819,10 @@ the object of study. Contact cues (switch points, mixed bigrams) would disappear
 from the feature space.
 
 #### Evaluation link
-When language tags exist (`english` / `roman_urdu` / `code_mixed`), held-out
-metrics are also reported **per language slice**, so we can discuss whether errors
-concentrate in mixed or Roman Urdu text — a linguistics-relevant breakdown, not
-only a single global accuracy number.
+When language tags exist (`english` / `roman_urdu` / `code_mixed` / `urdu`),
+held-out metrics are also reported **per language slice**, so we can discuss
+whether errors concentrate in mixed, Roman Urdu, or Urdu-script text — a
+linguistics-relevant breakdown, not only a single global accuracy number.
 """
         )
 
@@ -823,8 +830,10 @@ only a single global accuracy number.
         st.markdown(
             """
 #### Intensifiers
-Forms like *bohat* / *very* strengthen polarity (*bohat acha* vs *bohat bura*).
-We keep them; they are polarity-relevant morphology/lexicon, not stopwords.
+Forms like *bohat* / *very* / *بہت* / *بالکل* strengthen polarity
+(*bohat acha* vs *bohat bura*; *بہت اچھی* vs *بالکل بیکار*).
+We keep them and lightly re-weight strong polarity cues; they are
+polarity-relevant morphology/lexicon, not stopwords.
 
 #### Mixed sentiment
 Real reviews often praise one aspect and condemn another. Binary labels force a
@@ -840,30 +849,34 @@ dissatisfaction on a key feature. Humans can disagree; the probe documents a
             """
 #### Pipeline (train = inference)
 1. `clean_text` — shared preprocessing inside the sklearn Pipeline
-2. **TF-IDF** unigrams + bigrams (fit **only** on the training split)
-3. Linear model (**LinearSVC** primary; LogReg comparison available)
+2. **FeatureUnion:** word TF-IDF (1–2 grams) **+** character TF-IDF (`char_wb` 3–5)
+   so Urdu-script tokens stay informative even when rare / OOV
+3. Linear model (**LinearSVC** primary, calibrated; LogReg comparison available)
 4. `class_weight="balanced"` for skewed label counts
-5. **Sigmoid calibration** (`CalibratedClassifierCV`) for approximate probabilities
+5. Large expanded train set + **Urdu-script corpus** so Nastaliq rows do not
+   collapse to a constant prior
 6. Optional `--tune`: stratified GridSearchCV on macro F1 (`C`, `max_features`, n-grams)
 
 #### Why this baseline (for a linguistics + NLP interview)
 | Goal | How this method helps |
 |------|------------------------|
 | Transparency | Features are n-grams you can inspect |
+| Script robustness | Char n-grams + Urdu training rows keep Nastaliq alive |
 | Reproducibility | Seeded splits, saved holdout, metrics written from predictions |
 | CPU / offline | No GPU, no commercial API, no LLM required to predict |
-| Link errors to linguistics | Failures map to negation / contrast / spelling probes |
+| Link errors to linguistics | Failures map to negation / contrast / spelling / script probes |
 
 #### Leakage controls
 - Stratified train/test split **before** vectorizer fit
 - Exact-text dedupe
 - `assert_no_text_leakage` between splits
 - App uses the **same** preprocessor as training (no train/serve skew)
+- Model cache keyed by artifact mtime/size so a new `.joblib` reloads
 
 #### What calibration means (and does not mean)
-UI scores are **approximate class probabilities** after sigmoid calibration.
-They are still not a guarantee of correctness and not a measure of “confidence
-in understanding meaning.”
+UI scores are **approximate class probabilities** after sigmoid calibration
+(LinearSVC) or native LogReg probabilities. They are still not a guarantee of
+correctness and not a measure of “confidence in understanding meaning.”
 """
         )
 
@@ -875,11 +888,13 @@ in understanding meaning.”
 | Lowercase | *Acha* → *acha* | Reduce Latin-script sparsity |
 | Strip URLs / emails / @mentions | links, handles | Marketplace noise, not polarity |
 | Keep hashtag words | `#deal` → `deal` | May carry product cues |
-| Strip most punctuation | `!!!` | Little help for bag-of-n-grams |
-| **Keep negation** | *not*, *nahi*, … | Research core |
-| **Keep contrast** | *but*, *lekin*, … | Verdict often in clause 2 |
-| **Keep intensifiers** | *bohat*, *very* | Strengthens polarity |
+| Strip most punctuation | `!!!`، `۔` | Little help for bag-of-n-grams |
+| **Keep Arabic / Urdu letters** | *اچھی*, *بیکار* | Nastaliq reviews must not wipe empty |
+| **Keep negation** | *not*, *nahi*, *نہیں* | Research core |
+| **Keep contrast** | *but*, *lekin*, *لیکن* | Verdict often in clause 2 |
+| **Keep intensifiers** | *bohat*, *very*, *بہت* | Strengthens polarity |
 | Closed-set *nahi* map | *nahin* → *nahi* | Targeted spelling robustness |
+| Intensity markers | `__pos_intense__`, … | Light re-weight for strong polarity |
 | Contrast emphasis | repeat post-*but* clause | Help n-grams see the verdict |
 
 Full decision log: `docs/LINGUISTIC_DECISIONS.md`.
@@ -891,15 +906,20 @@ Full decision log: `docs/LINGUISTIC_DECISIONS.md`.
             """
 | Layer | Role |
 |-------|------|
-| Curated MIT CSV (`data/raw/bilingual_product_reviews.csv`) | Small, redistributable, language-tagged seed set |
-| Expanded training set (local) | Built via `scripts/build_expanded_dataset.py` |
-| Open UCI-style sources (optional) | Research-use English / Roman Urdu growth when present |
+| Curated MIT CSV (`data/raw/bilingual_product_reviews.csv`) | Small, redistributable, language-tagged seed (incl. Urdu script + Neutral) |
+| Expanded training set (`reviews_train_expanded.csv`) | Large multi-source set via `scripts/build_expanded_dataset.py` (~76k rows) |
+| Open / research CSVs | UCI Roman Urdu, Kaggle Roman Urdu, TweetEval, Amazon/IMDB/Yelp when present |
+| Synthetic Urdu-script corpus | Project-authored Nastaliq templates so script coverage cannot vanish |
 | Local Daraz references (optional) | Experiments only — **not** assumed redistributable |
+| Flexible org ingest (`src/ingest.py`) | CSV / TSV / Excel / JSON; map *Review* / *Sentiment* / stars — orgs need not match our schema |
 | Linguistic fixtures | Hand-crafted probes — not training targets to overfit |
 
 **Honesty rule:** do not publish third-party review dumps unless licenses are clear.
 Reference repos were inspected for **ideas only**; their metrics are **theirs**,
 never claimed as this project’s results (`docs/REFERENCE_ANALYSIS.md`).
+Binary external files (e.g. Kaggle Roman Urdu) have **no Neutral gold labels** by
+construction — the model can still emit Neutral on mixed tone, but those CSVs
+will not show Neutral as ground truth.
 """
         )
 
@@ -917,7 +937,8 @@ never claimed as this project’s results (`docs/REFERENCE_ANALYSIS.md`).
 Hand-crafted examples in `tests/fixtures/linguistic_examples.csv` cover:
 negation controls, English/Roman Urdu negation, spelling variants, *lekin* /
 *but* contrast, intensifiers, informal spelling, mixed ambiguity, negation of
-a complaint, and positive/negative code-switching.
+a complaint, and positive/negative code-switching. Urdu-script behaviour is
+checked on the curated seed and holdout language slice (`urdu`).
 
 Running `python -m src.linguistic_analysis` writes
 `reports/linguistic_error_analysis.md`.
@@ -953,17 +974,19 @@ label. A miss is evidence for the research question, not something to hide.
         st.markdown(
             """
 #### Can
-- Learn n-gram patterns associated with positive / negative reviews
-- Run fully offline on CPU
-- Show approximate calibrated probabilities in the UI
-- Surface failures on negation / contrast / spelling probes for discussion
+- Learn word/char n-gram patterns for positive / negative / neutral reviews
+- Score English, Roman Urdu, code-mixed, and Urdu-script text offline on CPU
+- Accept org tables via flexible column mapping (not only our curated schema)
+- Show approximate probabilities in the UI
+- Surface failures on negation / contrast / spelling / script probes
 - Report per-language and baseline-aware metrics
 
 #### Cannot
 - Reliably model sarcasm, irony, or long discourse structure
-- Guarantee every informal spelling
+- Guarantee every informal spelling or every unseen Nastaliq phrasing
 - Recover true speaker emotion or intent
 - Replace human annotation guidelines for Neutral / mixed cases
+- Invent Neutral gold labels inside binary-only external CSVs
 - Turn high holdout scores into a claim of “understanding meaning”
 
 **Interpretive limit:** model output is a **label**, not ground-truth meaning.
@@ -975,19 +998,23 @@ label. A miss is evidence for the research question, not something to hide.
             """
 | Linguistics focus | What we observe in reviews | What the code does |
 |-------------------|----------------------------|--------------------|
-| Negation / polarity | *not*, *nahi*, *no complaints* | Preserve cues; probe minimal pairs |
-| Contrastive discourse | *but*, *lekin* verdict shift | Preserve markers; emphasize clause 2 |
+| Negation / polarity | *not*, *nahi*, *نہیں*, *no complaints* | Preserve cues; probe minimal pairs |
+| Contrastive discourse | *but*, *lekin*, *لیکن* verdict shift | Preserve markers; emphasize clause 2 |
 | Orthographic variation | *nahin* / *nae* / *qlty* | Closed-set *nahi* map; leave other variants |
+| Script choice | Urdu in Latin vs نستعلیق | Keep Arabic letters; char n-grams + Urdu train rows |
 | Language contact | Code-mixed clauses | No translation; mixed strings; language slices |
-| Intensification | *bohat*, *very* | Keep intensifiers |
-| Responsible science | Small / skewed data risks | Baseline, macro F1, PR-AUC, probe report |
+| Intensification | *bohat*, *very*, *بہت* | Keep intensifiers; light intensity markers |
+| Responsible science | Skewed / multi-source data | Baseline, macro F1, PR-AUC, probe report |
 
 #### Suggested oral narrative (60–90 seconds)
-1. State the research question (negation, code-switching, spelling on bilingual reviews).
-2. Explain why stopword deletion of *nahi* / *lekin* would be linguistically wrong.
-3. Describe the transparent TF-IDF + linear baseline and leakage controls.
-4. Show a probe example (e.g. *acha hai lekin quality kharab*) and how evaluation is honest.
-5. End with limits: labels ≠ emotions; bag-of-n-grams ≠ discourse understanding.
+1. State the research question (negation, code-switching, spelling, **and Urdu script**
+   on bilingual product reviews).
+2. Explain why deleting *nahi* / *lekin* — or stripping Arabic letters — would be
+   linguistically wrong (and caused empty-vector collapse historically).
+3. Describe word+char TF-IDF, LinearSVC, large expanded data, and leakage controls.
+4. Show a probe (e.g. *acha hai lekin quality kharab* or an Urdu positive) and how
+   evaluation stays honest; note org files map via ingest without forcing our schema.
+5. End with limits: labels ≠ emotions; n-grams ≠ discourse understanding.
 """
         )
 
@@ -996,14 +1023,15 @@ label. A miss is evidence for the research question, not something to hide.
             """
 | Document | Contents |
 |----------|----------|
-| `docs/LINGUISTIC_DECISIONS.md` | Why we keep negation/contrast; spelling map |
+| `docs/LINGUISTIC_DECISIONS.md` | Why we keep negation/contrast; spelling map; Urdu letters |
 | `docs/PROJECT_PLAN.md` | Scope, milestones, interview story |
 | `docs/REFERENCE_ANALYSIS.md` | What we learned / rejected from reference repos |
 | `docs/TEST_REPORT.md` | Test evidence |
 | `reports/evaluation_report.md` | Latest held-out metrics |
 | `reports/linguistic_error_analysis.md` | Latest probe results |
 | `reports/model_comparison.md` | LogReg vs LinearSVC on the same holdout |
-| `data/README.md` | Expanded dataset build recipe / licensing notes |
+| `data/README.md` | Expanded dataset build / org ingest / licensing notes |
+| `src/ingest.py` | Flexible CSV / Excel / JSON column mapping for orgs |
 """
         )
 
