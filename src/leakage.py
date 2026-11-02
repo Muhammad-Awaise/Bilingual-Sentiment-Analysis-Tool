@@ -21,7 +21,7 @@ from typing import Any
 
 import pandas as pd
 
-from src.config import LABEL_COLUMN, RANDOM_SEED, TEXT_COLUMN
+from src.config import RANDOM_SEED, TEXT_COLUMN
 from src.preprocessing import clean_text
 
 SOURCE_COLUMN = "source"

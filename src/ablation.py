@@ -13,7 +13,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
-import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split
@@ -26,7 +25,6 @@ from src.config import (
     CHAR_NGRAM_RANGE,
     CV_FOLDS,
     LABEL_COLUMN,
-    LABEL_NEUTRAL,
     LANGUAGE_COLUMN,
     MAX_FEATURES,
     NGRAM_RANGE,

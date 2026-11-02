@@ -33,7 +33,6 @@ from src.leakage import (
     ANNOTATION_STATUS_COLUMN,
     SOURCE_COLUMN,
     assert_no_partition_leakage,
-    build_leakage_report,
     exact_raw_key,
 )
 from src.neutral_analysis import neutral_class_metrics
