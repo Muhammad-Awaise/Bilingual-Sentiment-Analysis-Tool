@@ -130,6 +130,14 @@ def test_intensity_emphasis_positive():
     assert "__pos_intense__" in out
 
 
+def test_intensity_markers_keep_underscores():
+    """Markers must remain single TF-IDF tokens (underscores not stripped)."""
+    out = clean_text("Bohat zabardast product hai")
+    assert "__pos_intense__" in out
+    assert "__intensifier__" in out
+    assert "pos intense" not in out
+
+
 def test_mixed_latin_and_urdu():
     out = clean_text("Quality اچھی hai but delivery late")
     assert "quality" in out

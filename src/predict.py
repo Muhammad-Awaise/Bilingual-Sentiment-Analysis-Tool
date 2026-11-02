@@ -22,8 +22,9 @@ from src.config import (
     NEUTRAL_MARGIN_MAX,
     NEUTRAL_MULTICLASS_FLOOR,
     SUPPORTED_LABELS,
+    URDU_WEAK_SCORE_MAX,
 )
-from src.preprocessing import clean_text, is_effectively_empty
+from src.preprocessing import clean_text, contains_urdu_script, is_effectively_empty
 
 
 def _intensity_tie_break(cleaned: str) -> str | None:
@@ -38,6 +39,15 @@ def _intensity_tie_break(cleaned: str) -> str | None:
     if neu_hits > 0 and pos_hits == 0 and neg_hits == 0:
         return LABEL_NEUTRAL
     return None
+
+
+def _vectorizer_transform(pipeline, texts: list[str]):
+    """Transform texts with word+char FeatureUnion or legacy tfidf step."""
+    if "features" in pipeline.named_steps:
+        return pipeline.named_steps["features"].transform(texts)
+    if "tfidf" in pipeline.named_steps:
+        return pipeline.named_steps["tfidf"].transform(texts)
+    raise AttributeError("Pipeline has neither 'features' nor 'tfidf' step")
 
 
 
@@ -75,7 +85,7 @@ def _decision_score(pipeline, cleaned_texts: list[str]) -> list[float | None]:
             proba = pipeline.predict_proba(cleaned_texts)
             return [float(np.max(row)) for row in proba]
         if hasattr(clf, "decision_function"):
-            feats = pipeline.named_steps["tfidf"].transform(cleaned_texts)
+            feats = _vectorizer_transform(pipeline, cleaned_texts)
             scores = clf.decision_function(feats)
             scores = np.atleast_1d(scores).astype(float)
             return [float(abs(s)) for s in scores]
@@ -126,10 +136,26 @@ def _apply_neutral_if_uncertain(
     - Multiclass: trust the classifier; on near-ties prefer intensity markers,
       else Neutral when the top score is weak.
     - Binary legacy: map very low max-probability to neutral.
+    - Urdu-script safety: when the bag collapses to a near-prior score
+      (~0.52–0.65) but preprocessing found clear polarity markers, trust the
+      markers. This is the failure mode where every Nastaliq row gets the
+      same negative prior while cleaned text still shows __pos_intense__.
     """
     pred = str(prediction)
     if pred == LABEL_NEUTRAL:
         return LABEL_NEUTRAL
+
+    voted = _intensity_tie_break(cleaned_text) if cleaned_text else None
+    urdu_weak = bool(
+        cleaned_text
+        and contains_urdu_script(cleaned_text)
+        and voted is not None
+        and voted != pred
+        and model_score is not None
+        and float(model_score) < URDU_WEAK_SCORE_MAX
+    )
+    if urdu_weak:
+        return voted if voted in SUPPORTED_LABELS else LABEL_NEUTRAL
 
     classes = _model_classes(pipeline)
     if LABEL_NEUTRAL in classes:
@@ -137,14 +163,20 @@ def _apply_neutral_if_uncertain(
             ordered = sorted(proba_row, reverse=True)
             margin = ordered[0] - ordered[1]
             if margin < NEUTRAL_MARGIN_MAX:
-                if cleaned_text:
-                    voted = _intensity_tie_break(cleaned_text)
-                    if voted is not None:
-                        return voted
+                if voted is not None:
+                    return voted
                 if ordered[0] < NEUTRAL_MULTICLASS_FLOOR:
                     return LABEL_NEUTRAL
         return pred if pred in SUPPORTED_LABELS else LABEL_NEUTRAL
 
+    # Binary legacy: intensity markers before low-confidence → neutral
+    if (
+        voted is not None
+        and voted != pred
+        and model_score is not None
+        and float(model_score) < URDU_WEAK_SCORE_MAX
+    ):
+        return voted
     if model_score is not None and float(model_score) < NEUTRAL_CONFIDENCE_MAX:
         return LABEL_NEUTRAL
     if pred in SUPPORTED_LABELS:

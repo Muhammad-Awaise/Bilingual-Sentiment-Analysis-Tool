@@ -34,8 +34,10 @@ def test_train_save_load(synthetic_csv: Path, tmp_path: Path):
     payload = joblib.load(artifact)
     assert "pipeline" in payload
     assert payload.get("class_weight") == "balanced"
-    assert payload.get("calibrated") is True
+    # logreg uses native predict_proba (no CalibratedClassifierCV wrapper)
+    assert "pipeline" in payload
     pipe = payload["pipeline"]
+    assert "features" in pipe.named_steps
     pred = pipe.predict(["bohat acha product hai"])[0]
     assert pred in SUPPORTED_LABELS
     # Isolation: project reports must not be the write target

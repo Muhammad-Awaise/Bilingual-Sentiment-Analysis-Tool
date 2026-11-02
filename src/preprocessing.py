@@ -23,10 +23,12 @@ _MENTION_RE = re.compile(r"@\w+")
 _HASHTAG_RE = re.compile(r"#(\w+)", re.UNICODE)
 _EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")
 _WHITESPACE_RE = re.compile(r"\s+", re.UNICODE)
-# Keep Latin letters/digits/apostrophe AND Arabic / Urdu *letters* + diacritics.
+# Keep Latin letters/digits/apostrophe/underscore AND Arabic / Urdu *letters*
+# + diacritics. Underscore is required so intensity/contrast markers
+# (__pos_intense__, __contrast__, …) survive tokenization.
 # Intentionally excludes Arabic punctuation (، ؛ ؟ ۔) so TF-IDF tokens stay clean.
 _NON_TEXT_RE = re.compile(
-    r"[^a-z0-9'\s"
+    r"[^a-z0-9_'\s"
     r"\u0621-\u063A\u0641-\u064A"  # Arabic letters
     r"\u064B-\u065F"  # Arabic diacritics / tatweel-adjacent marks
     r"\u066E-\u06D3"  # Extended Arabic / Urdu letters (incl. ے ہ ھ)
@@ -96,15 +98,22 @@ _STRONG_POSITIVE = frozenset(
         "premium",
         "اچھی",
         "اچھا",
+        "اچھے",
         "زبردست",
         "خوش",
         "بہترین",
         "پیارا",
+        "پیاری",
         "سفارش",
         "مضبوط",
         "کمال",
         "صاف",
         "درست",
+        "عمدہ",
+        "شاندار",
+        "محفوظ",
+        "تیز",
+        "پسند",
     }
 )
 _STRONG_NEGATIVE = frozenset(
@@ -137,6 +146,7 @@ _STRONG_NEGATIVE = frozenset(
         "خراب",
         "برا",
         "بری",
+        "برے",
         "جعلی",
         "ٹوٹ",
         "ضائع",
@@ -145,6 +155,10 @@ _STRONG_NEGATIVE = frozenset(
         "دیر",
         "غلط",
         "ناخوش",
+        "ختم",
+        "مایوس",
+        "فضول",
+        "ناقص",
     }
 )
 _INTENSIFIERS = frozenset(

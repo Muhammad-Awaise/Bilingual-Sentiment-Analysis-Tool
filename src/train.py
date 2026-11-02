@@ -13,10 +13,12 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import FeatureUnion, Pipeline
 from sklearn.svm import LinearSVC
 
 from src.config import (
+    CHAR_MAX_FEATURES,
+    CHAR_NGRAM_RANGE,
     CV_FOLDS,
     DEFAULT_RAW_CSV,
     EXPANDED_TRAIN_CSV,
@@ -47,33 +49,40 @@ from src.data_loader import (
     stratified_split,
 )
 from src.preprocessing import clean_text
+from src.urdu_augment import build_urdu_script_corpus
 
 
 def _augment_with_curated_urdu_and_neutral(df):
     """
-    When training on the expanded binary CSV, also fold in curated rows that
-    carry Neutral labels or Urdu-script text so those classes/features exist.
+    When training on the expanded CSV, ensure Neutral + Urdu-script coverage.
+
+    The expanded builder already embeds a large Urdu corpus; this path still
+    merges curated Neutral/Urdu and the full synthetic set so older expanded
+    CSVs (without Urdu) cannot silently collapse Nastaliq predictions.
 
     Unique rows only here — oversampling happens on the train split after
     stratified holdout to avoid train/test leakage.
     """
     import pandas as pd
 
-    if not DEFAULT_RAW_CSV.exists():
-        return df
-    try:
-        curated = load_reviews_csv(DEFAULT_RAW_CSV)
-    except DatasetError:
+    extras: list[pd.DataFrame] = []
+    if DEFAULT_RAW_CSV.exists():
+        try:
+            curated = load_reviews_csv(DEFAULT_RAW_CSV)
+            mask = (curated[LABEL_COLUMN] == LABEL_NEUTRAL) | (
+                curated[LANGUAGE_COLUMN].astype(str).str.lower() == "urdu"
+            )
+            extra = curated.loc[mask]
+            if not extra.empty:
+                extras.append(extra)
+        except DatasetError:
+            pass
+
+    extras.append(build_urdu_script_corpus())
+    if not extras:
         return df
 
-    mask = (curated[LABEL_COLUMN] == LABEL_NEUTRAL) | (
-        curated[LANGUAGE_COLUMN].astype(str).str.lower() == "urdu"
-    )
-    extra = curated.loc[mask]
-    if extra.empty:
-        return df
-
-    merged = pd.concat([df, extra], ignore_index=True)
+    merged = pd.concat([df, *extras], ignore_index=True)
     merged["_dedupe"] = merged[TEXT_COLUMN].astype(str).str.strip().str.lower()
     merged = merged.drop_duplicates(subset=["_dedupe"], keep="first")
     return merged.drop(columns=["_dedupe"]).reset_index(drop=True)
@@ -93,9 +102,13 @@ def _oversample_rare_train_rows(train_df):
     ]
     parts = [train_df]
     if not neutral.empty:
-        parts.append(pd.concat([neutral] * 40, ignore_index=True))
+        # Keep Neutral visible against a 70k+ Latin majority
+        reps = max(1, min(40, 4000 // max(len(neutral), 1)))
+        parts.append(pd.concat([neutral] * reps, ignore_index=True))
     if not urdu.empty:
-        parts.append(pd.concat([urdu] * 15, ignore_index=True))
+        # Target ~10k effective Urdu rows so char/word features stay dense
+        reps = max(1, min(20, 10000 // max(len(urdu), 1)))
+        parts.append(pd.concat([urdu] * reps, ignore_index=True))
     if len(parts) == 1:
         return train_df
     return pd.concat(parts, ignore_index=True)
@@ -107,12 +120,18 @@ def build_pipeline(
     calibrate: bool = True,
     max_features: int = MAX_FEATURES,
     ngram_range: tuple[int, int] = NGRAM_RANGE,
+    char_max_features: int = CHAR_MAX_FEATURES,
+    char_ngram_range: tuple[int, int] = CHAR_NGRAM_RANGE,
     C: float = 1.0,
 ) -> Pipeline:
     """
     Build an unfitted sklearn Pipeline.
 
-    TF-IDF is fit only on training data when pipeline.fit is called —
+    Features = word TF-IDF ∪ character TF-IDF (char_wb). Word n-grams carry
+    English / Roman Urdu polarity; character n-grams keep signal when
+    Urdu-script word tokens are rare or out-of-vocabulary.
+
+    Vectorizers are fit only on training data when pipeline.fit is called —
     never on the full dataset before splitting.
 
     LogisticRegression / LinearSVC use class_weight='balanced' for imbalance.
@@ -139,29 +158,53 @@ def build_pipeline(
         name = "TF-IDF + Logistic Regression"
 
     clf: Any
-    if calibrate:
-        clf = CalibratedClassifierCV(base, cv=CV_FOLDS, method="sigmoid")
+    is_calibrated = False
+    if calibrate and classifier == "linearsvc":
+        # LinearSVC needs calibration for predict_proba; parallelize folds.
+        clf = CalibratedClassifierCV(
+            base, cv=CV_FOLDS, method="sigmoid", n_jobs=-1
+        )
         name = f"{name} (calibrated)"
+        is_calibrated = True
+    elif calibrate and classifier == "logreg":
+        # LogisticRegression already exposes predict_proba — skip nested CV.
+        clf = base
+        name = f"{name} (proba)"
     else:
         clf = base
 
+    word_tfidf = TfidfVectorizer(
+        preprocessor=clean_text,
+        analyzer="word",
+        max_features=max_features,
+        ngram_range=ngram_range,
+        sublinear_tf=True,
+        lowercase=False,  # already lowercased in clean_text
+    )
+    char_tfidf = TfidfVectorizer(
+        preprocessor=clean_text,
+        analyzer="char_wb",
+        ngram_range=char_ngram_range,
+        max_features=char_max_features,
+        sublinear_tf=True,
+        lowercase=False,
+    )
     pipe = Pipeline(
         steps=[
             (
-                "tfidf",
-                TfidfVectorizer(
-                    preprocessor=clean_text,
-                    max_features=max_features,
-                    ngram_range=ngram_range,
-                    sublinear_tf=True,
-                    lowercase=False,  # already lowercased in clean_text
+                "features",
+                FeatureUnion(
+                    transformer_list=[
+                        ("word", word_tfidf),
+                        ("char", char_tfidf),
+                    ]
                 ),
             ),
             ("clf", clf),
         ]
     )
     setattr(pipe, "model_display_name", name)
-    setattr(pipe, "is_calibrated", bool(calibrate))
+    setattr(pipe, "is_calibrated", is_calibrated)
     return pipe
 
 
@@ -174,11 +217,13 @@ def majority_baseline_accuracy(y_true) -> float:
     return float(counts.max() / len(y))
 
 
-def _param_grid(calibrate: bool) -> dict[str, list[Any]]:
-    c_key = "clf__estimator__C" if calibrate else "clf__C"
+def _param_grid(calibrate: bool, classifier: str = "logreg") -> dict[str, list[Any]]:
+    # Only LinearSVC nests under CalibratedClassifierCV when calibrate=True.
+    nested = bool(calibrate) and classifier == "linearsvc"
+    c_key = "clf__estimator__C" if nested else "clf__C"
     return {
-        "tfidf__max_features": list(TUNE_MAX_FEATURES),
-        "tfidf__ngram_range": list(TUNE_NGRAM_RANGES),
+        "features__word__max_features": list(TUNE_MAX_FEATURES),
+        "features__word__ngram_range": list(TUNE_NGRAM_RANGES),
         c_key: list(TUNE_C_VALUES),
     }
 
@@ -190,6 +235,7 @@ def _fit_pipeline(
     *,
     tune: bool,
     calibrate: bool,
+    classifier: str = "logreg",
 ) -> tuple[Pipeline, dict[str, Any] | None]:
     """Fit pipeline, optionally with stratified GridSearchCV on F1-macro."""
     if not tune:
@@ -199,7 +245,7 @@ def _fit_pipeline(
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
     search = GridSearchCV(
         pipe,
-        param_grid=_param_grid(calibrate),
+        param_grid=_param_grid(calibrate, classifier=classifier),
         scoring="f1_macro",
         cv=cv,
         n_jobs=1,
@@ -212,7 +258,7 @@ def _fit_pipeline(
         "model_display_name",
         getattr(pipe, "model_display_name", MODEL_NAME) + " (tuned)",
     )
-    setattr(best, "is_calibrated", bool(calibrate))
+    setattr(best, "is_calibrated", bool(getattr(pipe, "is_calibrated", False)))
     tune_meta = {
         "best_params": search.best_params_,
         "best_cv_f1_macro": float(search.best_score_),
@@ -265,7 +311,12 @@ def train_and_save(
 
     pipe = build_pipeline(classifier=classifier, calibrate=calibrate)
     pipe, tune_meta = _fit_pipeline(
-        pipe, X_train, y_train, tune=tune, calibrate=calibrate
+        pipe,
+        X_train,
+        y_train,
+        tune=tune,
+        calibrate=calibrate,
+        classifier=classifier,
     )
 
     artifact = Path(artifact_path) if artifact_path else MODEL_ARTIFACT_PATH
@@ -282,7 +333,7 @@ def train_and_save(
         "class_counts_full": class_counts(df),
         "random_seed": RANDOM_SEED,
         "data_path": str(resolved_data),
-        "calibrated": bool(calibrate),
+        "calibrated": bool(getattr(pipe, "is_calibrated", False)),
         "class_weight": "balanced",
         "tuned": bool(tune),
         "tune_meta": tune_meta,
@@ -315,7 +366,7 @@ def train_and_save(
         "class_counts": class_counts(df),
         "language_counts": payload["language_counts_full"],
         "majority_baseline_accuracy_on_test": majority_baseline_accuracy(y_test),
-        "calibrated": bool(calibrate),
+        "calibrated": bool(getattr(pipe, "is_calibrated", False)),
         "tuned": bool(tune),
         "data_path": str(resolved_data),
         "reports_dir": str(reports),
@@ -327,7 +378,12 @@ def train_and_save(
         alt_name = "logreg" if classifier == "linearsvc" else "linearsvc"
         alt_pipe = build_pipeline(classifier=alt_name, calibrate=calibrate)
         alt_pipe, alt_tune = _fit_pipeline(
-            alt_pipe, X_train, y_train, tune=tune, calibrate=calibrate
+            alt_pipe,
+            X_train,
+            y_train,
+            tune=tune,
+            calibrate=calibrate,
+            classifier=alt_name,
         )
         alt_path = (
             MODELS_DIR / f"sentiment_pipeline_{alt_name}.joblib"

@@ -5,9 +5,11 @@ Recipe (documented, reproducible):
 
 1. Always include the curated MIT dataset
    (data/raw/bilingual_product_reviews.csv) with author language tags.
-2. Optionally add openly licensed UCI CSVs from data/raw/external/
-   (Roman Urdu binary + Amazon/IMDB/Yelp labelled sentences).
-3. Optionally merge local Daraz reference exports
+2. Optionally add openly licensed / research CSVs from data/raw/external/
+   (UCI Roman Urdu + Amazon/IMDB/Yelp, Kaggle Roman Urdu, TweetEval binary).
+3. Always fold in a large project-authored Urdu-script corpus so Nastaliq
+   reviews cannot collapse to the class prior at train time.
+4. Optionally merge local Daraz reference exports
    (data/processed/reviews_from_references.csv) — NOT for public redistribution.
 
 Language tags:
@@ -16,10 +18,10 @@ Language tags:
 
 Examples:
 
-    # Openly licensed growth (curated + UCI if downloaded)
+    # Large open + Urdu-script set (curated + UCI/Kaggle/TweetEval if present)
     python scripts/build_expanded_dataset.py --open-licensed
 
-    # Workspace experiment set (curated + local references + UCI)
+    # Max workspace set (also merge local Daraz references)
     python scripts/build_expanded_dataset.py --open-licensed --include-local-references
 
 Do not publish outputs that include --include-local-references unless licenses
@@ -54,6 +56,7 @@ from src.data_loader import (  # noqa: E402
     normalize_label,
     validate_reviews_dataframe,
 )
+from src.urdu_augment import build_urdu_script_corpus  # noqa: E402
 
 
 def _frame(text, label, language: str, source: str) -> pd.DataFrame:
@@ -110,6 +113,49 @@ def load_uci_english_reviews() -> pd.DataFrame | None:
     return out.dropna(subset=[LABEL_COLUMN])
 
 
+def load_kaggle_roman_urdu() -> pd.DataFrame | None:
+    path = EXTERNAL_DATA_DIR / "kaggle_roman_urdu_binary_11000.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, encoding="utf-8", on_bad_lines="skip")
+    text_col = "review" if "review" in df.columns else "text"
+    label_col = "gold_label" if "gold_label" in df.columns else "label"
+    out = _frame(
+        df[text_col],
+        df[label_col].map(normalize_label),
+        "roman_urdu",
+        "kaggle_roman_urdu_binary",
+    )
+    return out.dropna(subset=[LABEL_COLUMN])
+
+
+def load_tweeteval_binary() -> pd.DataFrame | None:
+    path = EXTERNAL_DATA_DIR / "tweeteval_sentiment_binary.csv"
+    if not path.exists():
+        return None
+    df = pd.read_csv(path, encoding="utf-8", on_bad_lines="skip")
+    text_col = "review" if "review" in df.columns else "text"
+    label_col = "gold_label" if "gold_label" in df.columns else "label"
+    out = _frame(
+        df[text_col],
+        df[label_col].map(normalize_label),
+        "english",
+        "tweeteval_sentiment_binary",
+    )
+    return out.dropna(subset=[LABEL_COLUMN])
+
+
+def load_urdu_script_corpus() -> pd.DataFrame:
+    """Project-authored Nastaliq reviews — required so Urdu cannot collapse."""
+    df = build_urdu_script_corpus()
+    return _frame(
+        df[TEXT_COLUMN],
+        df[LABEL_COLUMN],
+        "urdu",
+        "synthetic_urdu_script",
+    )
+
+
 def load_local_references() -> pd.DataFrame | None:
     path = PROCESSED_DATA_DIR / "reviews_from_references.csv"
     if not path.exists():
@@ -161,26 +207,35 @@ def build_expanded(
     *,
     open_licensed: bool = True,
     include_local_references: bool = False,
+    include_urdu_script: bool = True,
     out_path: Path | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     parts: list[pd.DataFrame] = [load_curated()]
     sources_used = ["curated_mit"]
 
     if open_licensed:
-        ru = load_uci_roman_urdu()
-        if ru is not None:
-            parts.append(ru)
-            sources_used.append("uci_roman_urdu_binary")
-        en = load_uci_english_reviews()
-        if en is not None:
-            parts.append(en)
-            sources_used.append("uci_amazon_imdb_yelp")
+        for loader, name in (
+            (load_uci_roman_urdu, "uci_roman_urdu_binary"),
+            (load_uci_english_reviews, "uci_amazon_imdb_yelp"),
+            (load_kaggle_roman_urdu, "kaggle_roman_urdu_binary"),
+            (load_tweeteval_binary, "tweeteval_sentiment_binary"),
+        ):
+            part = loader()
+            if part is not None and not part.empty:
+                parts.append(part)
+                sources_used.append(name)
 
     if include_local_references:
         ref = load_local_references()
         if ref is not None:
             parts.append(ref)
             sources_used.append("local_daraz_reference")
+
+    # Always bake Urdu-script rows into the on-disk expanded set so retrains
+    # cannot silently drop Nastaliq coverage.
+    if include_urdu_script:
+        parts.append(load_urdu_script_corpus())
+        sources_used.append("synthetic_urdu_script")
 
     combined = pd.concat(parts, ignore_index=True)
     combined = _restore_languages(combined)
@@ -223,10 +278,16 @@ def build_expanded(
         "sources_used": sources_used,
         "open_licensed": bool(open_licensed),
         "include_local_references": bool(include_local_references),
-        "redistributable": bool(open_licensed and not include_local_references),
+        "include_urdu_script": bool(include_urdu_script),
+        "redistributable": bool(
+            open_licensed
+            and not include_local_references
+            # synthetic Urdu is project-authored; still ok to redistribute
+        ),
         "notes": (
-            "Curated MIT rows are always included. UCI files are openly licensed "
-            "for research use — verify terms before commercial redistribution. "
+            "Curated MIT rows and the synthetic Urdu-script corpus are always "
+            "included when enabled. UCI / Kaggle / TweetEval files are for "
+            "research use — verify terms before commercial redistribution. "
             "Local Daraz references must not be published without license clearance."
         ),
     }
@@ -250,6 +311,11 @@ def main() -> None:
         help="Merge local Daraz reference exports (not redistributable)",
     )
     parser.add_argument(
+        "--no-urdu-script",
+        action="store_true",
+        help="Skip synthetic Urdu-script corpus (not recommended)",
+    )
+    parser.add_argument(
         "--out",
         type=str,
         default=str(EXPANDED_TRAIN_CSV),
@@ -260,6 +326,7 @@ def main() -> None:
     _df, manifest = build_expanded(
         open_licensed=open_licensed,
         include_local_references=args.include_local_references,
+        include_urdu_script=not args.no_urdu_script,
         out_path=Path(args.out),
     )
     print(json.dumps(manifest, indent=2))

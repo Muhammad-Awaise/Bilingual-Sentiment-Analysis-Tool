@@ -7,8 +7,8 @@
 | `raw/bilingual_product_reviews.csv` | **Primary** curated dataset authored for this project (binary labels) |
 | `raw/` | Immutable originals — do not overwrite in place |
 | `processed/` | Derived cleaned CSVs written by training / prepare scripts |
-| `processed/reviews_train_expanded.csv` | Preferred training set when present (local; gitignored) |
-| `raw/external/` | Optional local copies of third-party CSVs (gitignored) |
+| `processed/reviews_train_expanded.csv` | Preferred large training set (tracked so clones can retrain) |
+| `raw/external/` | Prepared third-party CSVs (tracked; `downloads/` extracts stay local) |
 
 ## Primary dataset
 
@@ -23,13 +23,13 @@
 ## Expanded training set (build recipe)
 
 `python -m src.train` prefers `processed/reviews_train_expanded.csv` when that
-file exists. Build it with:
+file exists. Build the **large** workspace set with:
 
 ```powershell
-# Curated + openly licensed UCI files (if present under raw/external/)
+# Curated + UCI/Kaggle/TweetEval (if present) + synthetic Urdu-script corpus
 python scripts/build_expanded_dataset.py
 
-# Workspace-only: also merge local Daraz reference exports (NOT redistributable)
+# Max local set: also merge Daraz reference exports (NOT redistributable)
 python scripts/prepare_dataset.py --from-references
 python scripts/build_expanded_dataset.py --include-local-references
 ```
@@ -37,10 +37,15 @@ python scripts/build_expanded_dataset.py --include-local-references
 A sidecar `reviews_train_expanded.manifest.json` records sources, class counts,
 language counts, and whether the build is redistributable.
 
-Open sources (when downloaded via `scripts/prepare_external_test_csvs.py`):
+The synthetic Urdu-script corpus is included by default so Nastaliq reviews
+cannot collapse to a constant negative prior again.
+
+Open / research sources (when present under `raw/external/`):
 
 - `uci_roman_urdu_binary.csv` → language `roman_urdu`
+- `kaggle_roman_urdu_binary_11000.csv` → language `roman_urdu`
 - `uci_amazon_imdb_yelp_combined.csv` → language `english`
+- `tweeteval_sentiment_binary.csv` → language `english`
 
 Missing language tags are restored with `src.data_loader.infer_language`.
 

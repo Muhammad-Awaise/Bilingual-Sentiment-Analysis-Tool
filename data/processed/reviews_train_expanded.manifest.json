@@ -1,0 +1,40 @@
+{
+  "created_utc": "2026-11-02T04:36:41.386042+00:00",
+  "output": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\data\\processed\\reviews_train_expanded.csv",
+  "n_rows": 76164,
+  "class_counts": {
+    "positive": 47587,
+    "negative": 28284,
+    "neutral": 293
+  },
+  "language_counts": {
+    "english": 28637,
+    "roman_urdu": 25958,
+    "code_mixed": 15879,
+    "urdu": 5070,
+    "unknown": 620
+  },
+  "source_counts": {
+    "tweeteval_sentiment_binary": 24930,
+    "local_daraz_reference": 20993,
+    "uci_roman_urdu_binary": 11048,
+    "kaggle_roman_urdu_binary": 10960,
+    "synthetic_urdu_script": 5018,
+    "uci_amazon_imdb_yelp": 2974,
+    "curated_mit": 241
+  },
+  "sources_used": [
+    "curated_mit",
+    "uci_roman_urdu_binary",
+    "uci_amazon_imdb_yelp",
+    "kaggle_roman_urdu_binary",
+    "tweeteval_sentiment_binary",
+    "local_daraz_reference",
+    "synthetic_urdu_script"
+  ],
+  "open_licensed": true,
+  "include_local_references": true,
+  "include_urdu_script": true,
+  "redistributable": false,
+  "notes": "Curated MIT rows and the synthetic Urdu-script corpus are always included when enabled. UCI / Kaggle / TweetEval files are for research use \u2014 verify terms before commercial redistribution. Local Daraz references must not be published without license clearance."
+}

@@ -1,21 +1,21 @@
 {
-  "holdout_size": 7052,
-  "majority_baseline_accuracy": 0.6151446398184912,
+  "holdout_size": 15233,
+  "majority_baseline_accuracy": 0.6247620298037156,
   "logistic_regression": {
-    "model_name": "TF-IDF + Logistic Regression (calibrated)",
-    "accuracy": 0.8865570051049347,
-    "f1_macro": 0.7625524906765397,
-    "precision_macro": 0.7156164208229852,
-    "recall_macro": 0.8645945770479195,
-    "pr_auc_positive": 0.9729098464736836
+    "model_name": "TF-IDF + Logistic Regression (proba)",
+    "accuracy": 0.8782905534037944,
+    "f1_macro": 0.8952911008273947,
+    "precision_macro": 0.8845348448188943,
+    "recall_macro": 0.9080847418758443,
+    "pr_auc_positive": 0.9707836380031343
   },
   "linearsvc": {
     "model_name": "TF-IDF + LinearSVC (calibrated)",
-    "accuracy": 0.8896766874645491,
-    "f1_macro": 0.7892066289417282,
-    "precision_macro": 0.8387913634553419,
-    "recall_macro": 0.756298920444498,
-    "pr_auc_positive": 0.9737858092887017
+    "accuracy": 0.8808507844810608,
+    "f1_macro": 0.9002422133367601,
+    "precision_macro": 0.9090627074014116,
+    "recall_macro": 0.8918641985432968,
+    "pr_auc_positive": 0.9694044361777036
   },
   "preferred": "linearsvc"
 }

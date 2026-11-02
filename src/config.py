@@ -54,11 +54,18 @@ LANGUAGE_COLUMN = "language"  # english | roman_urdu | code_mixed | urdu | unkno
 
 RANDOM_SEED = 42
 TEST_SIZE = 0.2
-MAX_FEATURES = 8000
+MAX_FEATURES = 12000
 NGRAM_RANGE = (1, 2)
+# Character n-grams keep signal when Urdu-script word tokens are rare / OOV
+CHAR_MAX_FEATURES = 4000
+CHAR_NGRAM_RANGE = (3, 5)
 CV_FOLDS = 3
 MAX_BATCH_ROWS = 200000
 MAX_UPLOAD_BYTES = 150 * 1024 * 1024  # 150 MB soft limit for Streamlit uploads
+
+# When Urdu (or other) bags collapse to a near-prior score, trust clear
+# polarity intensity markers from preprocessing instead of the weak prior.
+URDU_WEAK_SCORE_MAX = 0.65
 
 # Light hyperparameter grid (used only with --tune)
 TUNE_MAX_FEATURES = (4000, 8000, 12000)

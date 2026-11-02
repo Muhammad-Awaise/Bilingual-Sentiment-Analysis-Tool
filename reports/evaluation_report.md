@@ -2,10 +2,10 @@
 
 - **Model:** TF-IDF + LinearSVC (calibrated)
 - **Data path:** `C:\Users\GrowMore Devs\Desktop\Projects\Bilingual-Sentiment-Analysis-Tool\data\processed\reviews_train_expanded.csv`
-- **Train size:** 28150
-- **Test size:** 7038
-- **Class counts (full data):** {'positive': 21667, 'negative': 13521}
-- **Language counts (full data):** {'code_mixed': 15884, 'roman_urdu': 14988, 'english': 3696, 'unknown': 620}
+- **Train size:** 72525
+- **Test size:** 15233
+- **Class counts (full data):** {'positive': 47587, 'negative': 28284, 'neutral': 293}
+- **Language counts (full data):** {'english': 28637, 'roman_urdu': 25958, 'code_mixed': 15879, 'urdu': 5070, 'unknown': 620}
 - **Class weight:** balanced
 - **Calibrated:** True
 - **Tuned:** False
@@ -14,13 +14,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Accuracy | 0.8905 |
-| Precision (macro) | 0.8835 |
-| Recall (macro) | 0.8858 |
-| F1 (macro) | 0.8846 |
-| Majority-class baseline accuracy | 0.6158 |
-| Δ F1 vs majority baseline | 0.2688 |
-| PR-AUC (positive) | 0.9747 |
+| Accuracy | 0.8809 |
+| Precision (macro) | 0.9091 |
+| Recall (macro) | 0.8919 |
+| F1 (macro) | 0.9002 |
+| Majority-class baseline accuracy | 0.6248 |
+| Δ F1 vs majority baseline | 0.2755 |
+| PR-AUC (positive) | 0.9694 |
 
 Confusion matrix saved to `C:\Users\GrowMore Devs\Desktop\Projects\Bilingual-Sentiment-Analysis-Tool\reports\confusion_matrix.png`.
 
@@ -28,10 +28,11 @@ Confusion matrix saved to `C:\Users\GrowMore Devs\Desktop\Projects\Bilingual-Sen
 
 | Language | N | Accuracy | F1 (macro) |
 |----------|---|----------|------------|
-| code_mixed | 3188 | 0.9561 | 0.9491 |
-| english | 764 | 0.8325 | 0.8324 |
-| roman_urdu | 2955 | 0.8321 | 0.8295 |
-| unknown | 131 | 0.9466 | 0.9450 |
+| code_mixed | 3152 | 0.9613 | 0.6373 |
+| english | 5740 | 0.8585 | 0.8865 |
+| roman_urdu | 5160 | 0.8302 | 0.5529 |
+| unknown | 138 | 0.9638 | 0.6412 |
+| urdu | 1043 | 1.0000 | 1.0000 |
 
 ## Limitations
 

@@ -39,6 +39,14 @@ def test_prediction_in_label_set(trained_artifact: Path):
         assert pred in SUPPORTED_LABELS
 
 
+def test_urdu_positive_not_flipped_to_negative(trained_artifact: Path):
+    """Regression: Nastaliq praise must not collapse to the negative prior."""
+    text = "یہ پروڈکٹ بہت اچھی ہے کوالٹی زبردست ہے"
+    result = predict_one(text, artifact_path=trained_artifact)
+    assert "__pos_intense__" in result["cleaned_text"]
+    assert result["prediction"] == "positive"
+
+
 def test_consistent_same_model(trained_artifact: Path):
     text = "awful product broke immediately"
     a = predict_one(text, artifact_path=trained_artifact)["prediction"]
