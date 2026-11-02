@@ -261,23 +261,6 @@ def page_single(payload: dict) -> None:
         placeholder="e.g. Quality achi hai but delivery late thi",
         key="single_review_input",
     )
-    examples = {
-        "English positive": "Excellent product quality and fast delivery.",
-        "Roman Urdu negative": "Product acha nahi hai bilkul bekaar.",
-        "Neutral (mixed)": "Product theek hai na bohat acha na bura.",
-        "Code-mixed contrast": "Product acha hai lekin quality kharab hai",
-        "Urdu positive": "یہ پروڈکٹ بہت اچھی ہے، کوالٹی زبردست ہے۔",
-        "Urdu negative": "یہ پروڈکٹ بالکل بیکار ہے، ایک دن میں ٹوٹ گیا۔",
-        "Urdu neutral": "پروڈکٹ ٹھیک ہے، نہ بہت اچھا نہ برا۔",
-    }
-    items = list(examples.items())
-    for row_start in range(0, len(items), 4):
-        chunk = items[row_start : row_start + 4]
-        cols = st.columns(len(chunk))
-        for col, (label, sample) in zip(cols, chunk):
-            if col.button(label, key=f"ex_{label}"):
-                st.session_state["single_review_input"] = sample
-                st.rerun()
 
     if st.button("Analyze sentiment", type="primary"):
         try:
