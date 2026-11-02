@@ -146,15 +146,29 @@ def _apply_neutral_if_uncertain(
         return LABEL_NEUTRAL
 
     voted = _intensity_tie_break(cleaned_text) if cleaned_text else None
+    # Nastaliq collapse guard: empty/OOV bags often score ~0.52–0.65 negative
+    # while cleaned text still carries __pos_intense__ / __neg_intense__.
+    # Prefer markers for ANY Urdu conflict under the weak-score ceiling, and
+    # also when the score is the classic flat prior (~0.53) even on older apps.
+    urdu_text = bool(cleaned_text and contains_urdu_script(cleaned_text))
+    flat_prior = bool(
+        model_score is not None and 0.50 <= float(model_score) <= 0.56
+    )
     urdu_weak = bool(
-        cleaned_text
-        and contains_urdu_script(cleaned_text)
+        urdu_text
         and voted is not None
         and voted != pred
-        and model_score is not None
-        and float(model_score) < URDU_WEAK_SCORE_MAX
+        and (
+            flat_prior
+            or (
+                model_score is not None
+                and float(model_score) < URDU_WEAK_SCORE_MAX
+            )
+        )
     )
     if urdu_weak:
+        return voted if voted in SUPPORTED_LABELS else LABEL_NEUTRAL
+    if urdu_text and voted is not None and voted != pred and flat_prior:
         return voted if voted in SUPPORTED_LABELS else LABEL_NEUTRAL
 
     classes = _model_classes(pipeline)

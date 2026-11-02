@@ -174,13 +174,14 @@ def _render_metrics_block(metrics: dict, title: str, source_note: str) -> None:
 
 
 @st.cache_resource
-def _cached_model(path_str: str):
+def _cached_model(path_str: str, mtime_ns: int, size: int):
+    """Cache key includes mtime/size so replacing the joblib reloads the model."""
     return load_model(path_str)
 
 
 def sidebar_status() -> dict | None:
     st.sidebar.title("Bilingual Sentiment Analyzer")
-    st.sidebar.caption("English · Roman Urdu · Code-mixed product reviews")
+    st.sidebar.caption("English · Roman Urdu · Code-mixed · Urdu-script reviews")
 
     st.sidebar.markdown("---")
     st.sidebar.subheader("Navigate")
@@ -202,13 +203,38 @@ def sidebar_status() -> dict | None:
         )
         return None
     try:
-        payload = _cached_model(str(artifact))
+        stat = artifact.stat()
+        payload = _cached_model(str(artifact), stat.st_mtime_ns, stat.st_size)
     except PredictionError as exc:
         st.sidebar.error(str(exc))
         return None
+
+    pipe = payload.get("pipeline")
+    has_features = bool(pipe is not None and "features" in getattr(pipe, "named_steps", {}))
+    train_size = int(payload.get("train_size") or 0)
+    lang_counts = payload.get("language_counts_full") or {}
+    urdu_n = int(lang_counts.get("urdu") or 0)
+
+    # Old artifacts collapse every Nastaliq row to ~0.53 negative.
+    if train_size < 50000 or urdu_n < 1000 or not has_features:
+        st.sidebar.error(
+            "Stale model artifact detected. "
+            "Urdu-script predictions will be wrong. "
+            "Pull latest `models/sentiment_pipeline.joblib`, then click Reload."
+        )
+        if st.sidebar.button("Reload model cache", type="primary"):
+            _cached_model.clear()
+            st.rerun()
+        return None
+
     st.sidebar.success("Model loaded (CPU, offline)")
     st.sidebar.write(f"**Model:** {payload.get('model_name', 'unknown')}")
-    st.sidebar.write(f"**Train size:** {payload.get('train_size', '—')}")
+    st.sidebar.write(f"**Train size:** {train_size}")
+    st.sidebar.write(f"**Urdu-script rows in train:** {urdu_n}")
+    st.sidebar.caption(f"Artifact: `{artifact.name}` · {stat.st_size // 1024} KB")
+    if st.sidebar.button("Reload model cache"):
+        _cached_model.clear()
+        st.rerun()
     metrics = _load_metrics()
     if metrics:
         st.sidebar.write(f"**Test accuracy:** {metrics.get('accuracy', 0):.3f}")
