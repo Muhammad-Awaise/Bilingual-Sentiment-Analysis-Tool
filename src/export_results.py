@@ -39,6 +39,18 @@ def format_single_result_csv(result: dict[str, Any]) -> pd.DataFrame:
     )
 
 
+# Columns produced by a previous export / predict pass. Drop before rebuilding
+# so re-uploading "*_predictions.csv" does not create duplicate column names.
+_STALE_EXPORT_COLUMNS = (
+    "row_number",
+    "predicted_sentiment",
+    "model_score_not_probability",
+    "cleaned_review_text",
+    # Keep org schema columns (text/label/language/…). Fresh predict_* cols below
+    # are renamed onto the export names after this drop.
+)
+
+
 def format_predictions_csv(result: pd.DataFrame, text_column: str) -> pd.DataFrame:
     """
     Build a clean, Excel-friendly results table.
@@ -47,21 +59,31 @@ def format_predictions_csv(result: pd.DataFrame, text_column: str) -> pd.DataFra
     - Clear prediction column names
     - Rounded model scores
     - Leading row_number for easy lookup
+    - Safe to re-run on a previous predictions CSV
     """
     out = result.copy()
+    # Drop stale export names so rename(prediction→predicted_sentiment) cannot
+    # create duplicate columns (which makes out[col] a DataFrame, not a Series).
+    drop_cols = [c for c in _STALE_EXPORT_COLUMNS if c in out.columns]
+    if drop_cols:
+        out = out.drop(columns=drop_cols)
+
     out.insert(0, "row_number", range(1, len(out) + 1))
 
     rename = {
         "prediction": "predicted_sentiment",
         "model_score": "model_score_not_probability",
         "cleaned_text": "cleaned_review_text",
-        "model_name": "model_name",
     }
     out = out.rename(columns={k: v for k, v in rename.items() if k in out.columns})
 
     if "model_score_not_probability" in out.columns:
+        score_col = out["model_score_not_probability"]
+        # Guard: if duplicates somehow remain, keep the last (fresh) series
+        if isinstance(score_col, pd.DataFrame):
+            score_col = score_col.iloc[:, -1]
         out["model_score_not_probability"] = pd.to_numeric(
-            out["model_score_not_probability"], errors="coerce"
+            score_col, errors="coerce"
         ).round(4)
 
     # Prefer a readable alias for the source text column when it is generic

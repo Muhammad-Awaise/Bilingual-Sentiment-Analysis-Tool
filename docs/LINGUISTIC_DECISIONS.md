@@ -29,11 +29,12 @@ into positive/negative.
 
 | Cue | Examples | Why |
 |-----|----------|-----|
-| English negation | not, no | Flips polarity (*good* vs *not good*) |
-| Roman Urdu negation | nahi, nahin, mat, na | Central to the research question |
-| Urdu-script negation | نہیں and related cues in source text | Kept when present in Nastaliq reviews |
-| Contrast | but, lekin, magar, لیکن, مگر | Second clause often carries the reviewer's verdict |
-| Intensifiers | bohat, very | Strengthens polarity |
+| English negation | not, no, never, don't | Flips polarity (*good* vs *not good*) |
+| Roman Urdu negation | nahi, nahin, mat (not bare *na*) | Central to the research question |
+| Urdu-script negation | نہیں، نہ، مت | Kept when present in Nastaliq reviews |
+| Negation scope marker | `__neg_scope__` (bounded ±3 token window) | Lightweight cue for *not good* / *acha nahi* / *اچھی نہیں* |
+| Contrast | but, lekin, magar, however, though, although, لیکن, مگر | Second clause often carries the reviewer's verdict |
+| Intensifiers | bohat, bahut, very, extremely, بہت, بالکل | Strengthens polarity |
 
 **Contrast with Reference 1:** their stopword list removes `nahi`, `nahin`, and
 `lekin`. That would hide exactly the phenomena we want to study. We do **not**
@@ -47,19 +48,28 @@ erase distinctions and invent false equivalence.
 We **do** apply a **closed-set** negation spelling map for a handful of known
 informal variants of *nahi*:
 
-`nahin`, `naheen`, `nahe`, `nae`, `nai`, `naie`, `nhi`, `nhin` → `nahi`
+`nahin`, `naheen`, `naheeen`, `nahe`, `nae`, `nai`, `naie`, `nhi`, `nhin` → `nahi`
 
-This targets a documented probe failure (`nahin`) without rewriting the rest of
-the lexicon. Other informal spellings (e.g. `qlty`, `zabrdast`) remain as-is so
-error analysis can still surface sparsity issues.
+This targets documented probe failures (`nahin` / `naheeen`) without rewriting
+the rest of the lexicon. Other informal spellings (e.g. `qlty`, `zabrdast`,
+`achi`, `bohat`/`bht`) remain as-is so character n-grams and error analysis can
+still surface sparsity issues.
 
 ## 4b. Contrast emphasis (light feature)
 
-Contrast markers (`but`, `lekin`, `magar`, `however`, `though`) are preserved.
-In addition, `clean_text` appends a `__contrast__` marker and duplicates the
-**post-contrast clause** so bag-of-ngrams TF-IDF can weight the verdict side
-more heavily (e.g. *acha hai lekin quality kharab*). This is a transparent,
+Contrast markers (`but`, `lekin`, `magar`, `however`, `though`, `although`) are
+preserved. In addition, `clean_text` appends a `__contrast__` marker and
+duplicates the **post-contrast clause** so bag-of-ngrams TF-IDF can weight the
+verdict side more heavily (e.g. *acha hai lekin quality kharab*). Ablation
+modes can disable clause repetition (marker-only). This is a transparent,
 deterministic feature — not a neural attention mechanism.
+
+## 4c. Negation scope (light feature)
+
+After intensity marking, a bounded window inserts `__neg_scope__` near
+negation cues and nearby polarity tokens. This is **not** a syntactic parser:
+English-like (*not very good*) and Roman/Urdu post-predicate (*acha nahi* /
+*اچھی نہیں*) orders are both covered heuristically.
 
 ## 5. Code-switching
 

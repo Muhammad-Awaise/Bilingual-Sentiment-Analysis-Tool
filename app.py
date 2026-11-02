@@ -7,6 +7,8 @@ Run locally:
 
 from __future__ import annotations
 
+import json
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -17,6 +19,7 @@ from src.config import (
     MAX_UPLOAD_BYTES,
     METRICS_JSON_PATH,
     MODEL_ARTIFACT_PATH,
+    REPORTS_DIR,
     ROOT_DIR,
 )
 from src.data_loader import normalize_label
@@ -293,12 +296,35 @@ def page_single(payload: dict) -> None:
     else:
         st.error(f"Predicted sentiment: **{sentiment}**")
 
+    st.write(f"**Original review:** {result['text']}")
     st.write(f"**Model:** {result['model_name']}")
     if result["model_score"] is not None:
+        label = "Calibrated confidence" if result.get("calibrated") else "Model score"
         st.write(
-            f"**Model score:** `{result['model_score']:.4f}` — {result['score_note']}"
+            f"**{label}:** `{result['model_score']:.4f}` — {result['score_note']}"
         )
-    with st.expander("Cleaned text"):
+    if result.get("low_confidence"):
+        st.warning(
+            "Low calibrated confidence — treat this prediction cautiously. "
+            "Confidence is not certainty."
+        )
+    composition = result.get("language_composition") or {}
+    if composition:
+        st.write(
+            f"**Detected composition:** `{composition.get('category', 'unknown')}` "
+            f"(Latin={composition.get('has_latin')}, "
+            f"Urdu-script={composition.get('has_urdu_script')}, "
+            f"EN cues={composition.get('english_cue_hits', 0)}, "
+            f"RU cues={composition.get('roman_urdu_cue_hits', 0)})"
+        )
+    if result.get("hybrid_heuristics_applied") and result.get(
+        "raw_model_prediction"
+    ) != result.get("prediction"):
+        st.caption(
+            f"Statistical model predicted `{result.get('raw_model_prediction')}`; "
+            "a documented hybrid heuristic adjusted the displayed label."
+        )
+    with st.expander("Cleaned text (features seen by the vectorizer)"):
         st.code(result["cleaned_text"])
     st.caption(result["limitations"])
 
@@ -413,15 +439,21 @@ def page_batch(payload: dict) -> None:
     with st.expander("Ingest check (format / columns)", expanded=True):
         st.write(
             f"**Format:** `{report.format}` · **Encoding:** `{report.encoding}` · "
-            f"**Rows:** {report.n_rows} · **Empty text:** {report.empty_text_rows}"
+            f"**Rows:** {report.n_rows} · **Empty text:** {report.empty_text_rows} · "
+            f"**Duplicate texts:** {getattr(report, 'duplicate_text_rows', 0)}"
         )
         st.write(
             f"**Text column:** `{report.text_column}`"
             + (
                 f" · **Label column:** `{report.label_column}`"
                 if report.label_column
-                else " · **Label column:** none"
+                else " · **Label column:** none (prediction-only)"
             )
+        )
+        st.caption(
+            "Prediction-only uploads keep your original columns. "
+            "Labelled uploads enable evaluation metrics. "
+            "Training uses a separate normalized schema."
         )
         if report.label_counts:
             st.write("Mapped label counts:", report.label_counts)
@@ -625,6 +657,156 @@ def page_evaluation() -> None:
         fig_c.tight_layout()
         st.pyplot(fig_c, clear_figure=True, use_container_width=True)
         plt.close(fig_c)
+
+    # Neutral / language / source / calibration / challenge / Daraz / ablation
+    neu = metrics.get("neutral_analysis") or {}
+    if neu.get("neutral_present"):
+        st.subheader("Neutral-class analysis")
+        st.write(
+            f"Support `{neu.get('support')}` · "
+            f"P/R/F1 `{neu.get('precision'):.3f}` / "
+            f"`{neu.get('recall'):.3f}` / `{neu.get('f1'):.3f}`"
+        )
+        st.caption(neu.get("notes", ""))
+        c1, c2 = st.columns(2)
+        with c1:
+            st.write("Gold Neutral predicted as:", neu.get("true_neutral_predicted_as"))
+        with c2:
+            st.write("Predicted Neutral but true:", neu.get("predicted_neutral_but_true"))
+
+    per_lang = metrics.get("per_language") or {}
+    if per_lang:
+        st.subheader("Per-language metrics")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Language": k,
+                        "N": v.get("n_samples"),
+                        "Accuracy": v.get("accuracy"),
+                        "F1 macro": v.get("f1_macro"),
+                    }
+                    for k, v in per_lang.items()
+                ]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    per_src = metrics.get("per_source") or {}
+    if per_src:
+        st.subheader("Per-source metrics")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Source": k,
+                        "N": v.get("n_samples"),
+                        "Accuracy": v.get("accuracy"),
+                        "F1 macro": v.get("f1_macro"),
+                        "Neutral F1": v.get("neutral_f1"),
+                    }
+                    for k, v in per_src.items()
+                ]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    cal = metrics.get("calibration") or {}
+    if cal.get("available"):
+        st.subheader("Calibration analysis")
+        st.write(
+            f"Brier `{cal.get('brier_score'):.4f}` · "
+            f"ECE `{cal.get('expected_calibration_error'):.4f}` · "
+            f"Mean confidence `{cal.get('confidence_distribution', {}).get('mean', float('nan')):.4f}`"
+        )
+        st.caption(cal.get("notes", ""))
+        rel = cal.get("reliability_diagram") or []
+        if rel:
+            rel_df = pd.DataFrame(rel)
+            rel_df = rel_df[rel_df["count"] > 0]
+            if not rel_df.empty:
+                st.dataframe(rel_df, use_container_width=True, hide_index=True)
+
+    challenge = metrics.get("challenge_set") or {}
+    if challenge.get("available"):
+        st.subheader("Linguistic challenge set")
+        st.write(
+            f"N `{challenge.get('n_examples')}` · "
+            f"correct `{challenge.get('correct')}` · "
+            f"incorrect `{challenge.get('incorrect')}` · "
+            f"accuracy `{challenge.get('accuracy'):.3f}`"
+        )
+        st.caption(challenge.get("notes", ""))
+        by_cat = challenge.get("by_category") or {}
+        if by_cat:
+            st.dataframe(
+                pd.DataFrame(
+                    [
+                        {
+                            "Category": k,
+                            "N": v.get("n"),
+                            "Correct": v.get("correct"),
+                            "Accuracy": v.get("accuracy"),
+                            "F1 macro": v.get("f1_macro"),
+                        }
+                        for k, v in by_cat.items()
+                    ]
+                ),
+                use_container_width=True,
+                hide_index=True,
+            )
+        errs = challenge.get("error_examples") or []
+        if errs:
+            with st.expander("Challenge-set error examples"):
+                st.dataframe(pd.DataFrame(errs), use_container_width=True, hide_index=True)
+
+    daraz_path = REPORTS_DIR / "daraz_external_metrics.json"
+    if daraz_path.exists():
+        try:
+            daraz = json.loads(daraz_path.read_text(encoding="utf-8"))
+            st.subheader("External Daraz performance")
+            if daraz.get("usable"):
+                st.write(
+                    f"N `{daraz.get('n_samples')}` · "
+                    f"accuracy `{daraz.get('accuracy'):.4f}` · "
+                    f"macro F1 `{daraz.get('f1_macro'):.4f}`"
+                )
+                st.write("Δ vs internal holdout:", daraz.get("delta_vs_internal_holdout"))
+                for lim in daraz.get("limitations") or []:
+                    st.caption(lim)
+            else:
+                st.warning(
+                    "Daraz external eval not usable: "
+                    + "; ".join(daraz.get("limitations") or ["see report"])
+                )
+        except Exception:
+            pass
+
+    ablation_path = REPORTS_DIR / "ablation_results.json"
+    if ablation_path.exists():
+        try:
+            ablation = json.loads(ablation_path.read_text(encoding="utf-8"))
+            st.subheader("Ablation comparisons")
+            st.caption(
+                f"Seed `{ablation.get('random_seed')}` · "
+                f"rows used `{ablation.get('n_used')}` · "
+                f"subsampled `{ablation.get('subsampled')}`"
+            )
+            rows = ablation.get("results") or []
+            if rows:
+                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        except Exception:
+            pass
+
+    from src.reproducibility import stale_artifact_report
+
+    stale = stale_artifact_report()
+    if stale.get("warnings"):
+        st.subheader("Artifact consistency")
+        for w in stale["warnings"]:
+            st.warning(w)
 
     st.caption(metrics.get("notes", ""))
 

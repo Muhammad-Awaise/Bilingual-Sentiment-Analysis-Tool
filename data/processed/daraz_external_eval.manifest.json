@@ -1,0 +1,30 @@
+{
+  "created_utc": "2026-11-02T06:22:12.082887+00:00",
+  "output": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\data\\processed\\daraz_external_eval.csv",
+  "n_rows": 7998,
+  "class_counts": {
+    "neutral": 3501,
+    "positive": 3054,
+    "negative": 1443
+  },
+  "language_counts": {
+    "english": 4620,
+    "roman_urdu": 1646,
+    "unknown": 887,
+    "code_mixed": 831,
+    "urdu": 14
+  },
+  "source_counts": {
+    "daraz_code_mixed": 5564,
+    "daraz_fyp": 2434
+  },
+  "annotation_status_counts": {
+    "reference_labelled": 7998
+  },
+  "include_neutral": true,
+  "excluded_overlap_with_train": 16359,
+  "limitations": [],
+  "usable_for_external_eval": true,
+  "redistributable": false,
+  "notes": "External Daraz evaluation only. Do not train, tune thresholds, select features, or optimize hyperparameters on this set. Annotation status is 'reference_labelled' until manually reviewed."
+}

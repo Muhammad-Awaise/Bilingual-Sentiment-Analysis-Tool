@@ -5,10 +5,16 @@ The expanded Latin-heavy CSVs contain little or no Nastaliq text. Without a
 dedicated Urdu-script set, TF-IDF collapses every Urdu row to the class prior
 (constant ~0.53 negative). This module builds thousands of unique templated
 reviews so word/char features learn real Urdu polarity tokens.
+
+Every synthetic row carries:
+- provenance = synthetic
+- source = synthetic_urdu_script
+- template_family = stable id for template-family-aware splits
 """
 
 from __future__ import annotations
 
+import hashlib
 from typing import Iterable
 
 import pandas as pd
@@ -20,6 +26,12 @@ from src.config import (
     LABEL_POSITIVE,
     LANGUAGE_COLUMN,
     TEXT_COLUMN,
+)
+from src.leakage import (
+    ANNOTATION_STATUS_COLUMN,
+    PROVENANCE_COLUMN,
+    SOURCE_COLUMN,
+    TEMPLATE_FAMILY_COLUMN,
 )
 
 _ITEMS = (
@@ -136,6 +148,28 @@ _EXTRAS: tuple[tuple[str, str], ...] = (
 )
 
 
+def _family_id(kind: str, template: str) -> str:
+    digest = hashlib.sha1(template.encode("utf-8")).hexdigest()[:10]
+    return f"syn_{kind}_{digest}"
+
+
+def _row(
+    text: str,
+    label: str,
+    *,
+    template_family: str,
+) -> dict[str, str]:
+    return {
+        TEXT_COLUMN: text,
+        LABEL_COLUMN: label,
+        LANGUAGE_COLUMN: "urdu",
+        SOURCE_COLUMN: "synthetic_urdu_script",
+        PROVENANCE_COLUMN: "synthetic",
+        TEMPLATE_FAMILY_COLUMN: template_family,
+        ANNOTATION_STATUS_COLUMN: "synthetic_template",
+    }
+
+
 def _rows_from_templates(
     templates: Iterable[str],
     *,
@@ -143,32 +177,30 @@ def _rows_from_templates(
     adjs: Iterable[str],
     intensifiers: Iterable[str],
     label: str,
+    kind: str,
 ) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for tmpl in templates:
+        family = _family_id(kind, tmpl)
         needs_intens = "{intens}" in tmpl
         for item in items:
             for adj in adjs:
                 if needs_intens:
                     for intens in intensifiers:
                         rows.append(
-                            {
-                                TEXT_COLUMN: tmpl.format(
-                                    item=item, adj=adj, intens=intens
-                                ),
-                                LABEL_COLUMN: label,
-                                LANGUAGE_COLUMN: "urdu",
-                            }
+                            _row(
+                                tmpl.format(item=item, adj=adj, intens=intens),
+                                label,
+                                template_family=family,
+                            )
                         )
                 else:
                     rows.append(
-                        {
-                            TEXT_COLUMN: tmpl.format(
-                                item=item, adj=adj, intens=""
-                            ),
-                            LABEL_COLUMN: label,
-                            LANGUAGE_COLUMN: "urdu",
-                        }
+                        _row(
+                            tmpl.format(item=item, adj=adj, intens=""),
+                            label,
+                            template_family=family,
+                        )
                     )
     return rows
 
@@ -178,6 +210,8 @@ def build_urdu_script_corpus() -> pd.DataFrame:
     Return a large deduplicated Urdu-script sentiment DataFrame.
 
     Typical size is several thousand unique rows (pos/neg/neu).
+    Synthetic rows are tagged for template-family-aware splits so the same
+    template skeleton cannot dominate both train and evaluation.
     """
     rows: list[dict[str, str]] = []
     rows.extend(
@@ -187,6 +221,7 @@ def build_urdu_script_corpus() -> pd.DataFrame:
             adjs=_POS_ADJ,
             intensifiers=_INTENS,
             label=LABEL_POSITIVE,
+            kind="pos",
         )
     )
     rows.extend(
@@ -196,6 +231,7 @@ def build_urdu_script_corpus() -> pd.DataFrame:
             adjs=_NEG_ADJ,
             intensifiers=_INTENS,
             label=LABEL_NEGATIVE,
+            kind="neg",
         )
     )
     rows.extend(
@@ -205,18 +241,32 @@ def build_urdu_script_corpus() -> pd.DataFrame:
             adjs=_NEU_ADJ,
             intensifiers=_INTENS,
             label=LABEL_NEUTRAL,
+            kind="neu",
         )
     )
     for label, text in _EXTRAS:
-        rows.append(
-            {
-                TEXT_COLUMN: text,
-                LABEL_COLUMN: label,
-                LANGUAGE_COLUMN: "urdu",
-            }
-        )
+        family = _family_id("extra", text)
+        rows.append(_row(text, label, template_family=family))
 
     df = pd.DataFrame(rows)
     df["_dedupe"] = df[TEXT_COLUMN].astype(str).str.strip().str.lower()
     df = df.drop_duplicates(subset=["_dedupe"], keep="first")
     return df.drop(columns=["_dedupe"]).reset_index(drop=True)
+
+
+def synthetic_template_summary(df: pd.DataFrame | None = None) -> dict:
+    """Counts by template family for research reporting."""
+    if df is None:
+        df = build_urdu_script_corpus()
+    return {
+        "n_rows": int(len(df)),
+        "n_families": int(df[TEMPLATE_FAMILY_COLUMN].nunique())
+        if TEMPLATE_FAMILY_COLUMN in df.columns
+        else 0,
+        "class_counts": df[LABEL_COLUMN].value_counts().to_dict(),
+        "family_counts_head": (
+            df[TEMPLATE_FAMILY_COLUMN].value_counts().head(15).to_dict()
+            if TEMPLATE_FAMILY_COLUMN in df.columns
+            else {}
+        ),
+    }

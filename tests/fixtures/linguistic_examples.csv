@@ -1,16 +1,30 @@
 text,category,expected_sentiment,notes
 This product is good,negation_control,positive,Baseline positive without negation
 This product is not good,negation_english,negative,English negation flips polarity
+I am not happy with this item,negation_english,negative,Negation scope over happy
+not very good quality,negation_english,negative,Bounded negation with intensifier
 Product acha hai,negation_control_urdu,positive,Roman Urdu positive baseline
 Product acha nahi hai,negation_roman_urdu,negative,Roman Urdu negation with nahi
 Product acha nahin hai,negation_spelling,negative,Alternate spelling nahin
+Product acha naheeen hai,negation_spelling,negative,Extra-e nahi variant
+yeh product acha nahi hai,negation_roman_urdu,negative,Full Roman Urdu negation phrase
+bilkul acha nahi hai,negation_roman_urdu,negative,Intensifier plus nahi
+یہ چیز اچھی نہیں ہے,negation_urdu_script,negative,Urdu-script negation
 Product acha hai lekin quality kharab hai,contrast_lekin,negative,Contrast clause with lekin dominates overall judgment
 Quality achi hai but delivery late thi,contrast_code_switch,negative,Code-switched contrast with but
+Although packaging looked fine the item is broken,contrast_although,negative,English although contrast
+اچھا ہے لیکن کوالٹی خراب ہے,contrast_urdu_script,negative,Urdu-script contrast with لیکن
 Bohat acha product hai,intensifier_positive,positive,Intensifier bohat strengthens positive
 Bohat bura experience tha,intensifier_negative,negative,Intensifier bohat strengthens negative
-Qlty zabrdast hai price bhi ok,informal_spelling_pos,positive,Compressed informal Roman Urdu spelling
+بہت اچھی چیز ہے,intensifier_urdu_script,positive,Urdu intensifier بہت
+Qlty zabrdast hai price bhi ok,informal_spelling_pos,positive,Compressed informal Roman Urdu spelling — do not aggressively normalize
 Qlty kharab hai price bhi ziada,informal_spelling_neg,negative,Informal spelling with negative cues
-I like the design but I am not happy with the battery,mixed_ambiguous,negative,Mixed sentiment; overall dissatisfaction on key feature
+achi quality but late delivery,roman_urdu_variation,negative,achi spelling variant with contrast
+I like the design but I am not happy with the battery,mixed_sentiment,negative,Mixed sentiment; overall dissatisfaction on key feature
 No complaints everything works well,negation_of_complaint,positive,Negation of a negative noun yields positive meaning
-Kabhi nahi lunga dobara worst product,strong_neg_code_mixed,negative,Strong negative with code-mixing
-Seller cooperative tha and item exact same as photos,code_switch_positive,positive,Positive code-switched review
+Kabhi nahi lunga dobara worst product,code_switching,negative,Strong negative with code-mixing
+Seller cooperative tha and item exact same as photos,code_switching,positive,Positive code-switched review
+Quality اچھی hai but delivery late,code_switching_script,negative,English + Urdu script mix
+The product arrived on time and matches the description,neutral_factual,neutral,Factual review without strong polarity
+Average quality nothing special,neutral_factual,neutral,Mild factual/neutral tone
+ٹھیک ہے عام سا تجربہ,neutral_factual,neutral,Urdu-script mild neutral

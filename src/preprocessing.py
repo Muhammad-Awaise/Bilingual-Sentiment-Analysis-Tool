@@ -46,6 +46,7 @@ _ARABIC_PUNCT_RE = re.compile(r"[\u060C\u061B\u061F\u06D4\u066A\u066B\u066C\u066
 _NEGATION_SPELLING_MAP = {
     "nahin": "nahi",
     "naheen": "nahi",
+    "naheeen": "nahi",  # common extra-e variant
     "nahe": "nahi",
     "nae": "nahi",
     "nai": "nahi",
@@ -56,8 +57,9 @@ _NEGATION_SPELLING_MAP = {
 
 # Contrast cues only — do NOT include Urdu preposition "پر" (on/at), which
 # falsely fired on phrases like "وقت پر" (on time).
+# Includes *although* (required connective; previously missing).
 _CONTRAST_RE = re.compile(
-    r"(?<!\w)(but|lekin|magar|however|though|لیکن|مگر)(?!\w)",
+    r"(?<!\w)(but|lekin|magar|however|though|although|لیکن|مگر)(?!\w)",
     re.UNICODE,
 )
 
@@ -76,6 +78,7 @@ _STRONG_POSITIVE = frozenset(
         "recommended",
         "satisfied",
         "happy",
+        "good",  # needed so "not good" / "not very good" get negation scope
         "superb",
         "outstanding",
         "impressive",
@@ -208,13 +211,15 @@ def _canonicalize_negation_spellings(text: str) -> str:
     return " ".join(_NEGATION_SPELLING_MAP.get(tok, tok) for tok in tokens)
 
 
-def _emphasize_contrast_clause(text: str) -> str:
+def _emphasize_contrast_clause(text: str, *, repeat_verdict: bool = True) -> str:
     """
     Re-weight contrastive reviews for bag-of-ngrams:
 
-    Keep the pre-contrast clause once, mark the contrast cue, and repeat the
-    post-contrast (verdict) clause so TF-IDF prefers the reviewer's final stance
-    (e.g. *achi hai but delivery late* → late/delivery dominate).
+    Keep the pre-contrast clause once, mark the contrast cue, and optionally
+    repeat the post-contrast (verdict) clause so TF-IDF prefers the reviewer's
+    final stance (e.g. *achi hai but delivery late* → late/delivery dominate).
+
+    Set repeat_verdict=False for marker-only ablation experiments.
     """
     matches = list(_CONTRAST_RE.finditer(text))
     if not matches:
@@ -224,8 +229,9 @@ def _emphasize_contrast_clause(text: str) -> str:
     after = text[last.end() :].strip()
     marker = last.group(1)
     if after:
-        # Verdict clause repeated; setup clause kept once
-        return f"{before} __contrast__ {marker} {after} {after} {after}".strip()
+        if repeat_verdict:
+            return f"{before} __contrast__ {marker} {after} {after} {after}".strip()
+        return f"{before} __contrast__ {marker} {after}".strip()
     if before:
         return f"{before} __contrast__ {marker}"
     return f"__contrast__ {marker}"
@@ -237,14 +243,93 @@ _NEGATION_TOKENS = frozenset(
         "no",
         "never",
         "n't",
+        "dont",
+        "don't",
         "nahi",
         "mat",
-        "na",
+        # "na" omitted as a standalone English/Roman particle — too many false
+        # positives (*acha na hai* can be discourse, not negation). Urdu نہ kept.
         "نہیں",
         "نہ",
         "مت",
     }
 )
+
+# Bounded window for lightweight negation-scope features (tokens after/before cue)
+_NEGATION_SCOPE_WINDOW = 3
+
+# Extra polarity tokens for scope marking (includes milder cues than intensity)
+_SCOPE_POLARITY = _STRONG_POSITIVE | _STRONG_NEGATIVE | frozenset(
+    {
+        "good",
+        "bad",
+        "happy",
+        "great",
+        "poor",
+        "fine",
+        "nice",
+        "late",
+        "slow",
+        "fast",
+        "worth",
+        "recommend",
+        "recommended",
+        "complaint",
+        "complaints",
+        "issue",
+        "issues",
+        "problem",
+        "problems",
+    }
+)
+
+
+def _emphasize_negation_scope(text: str) -> str:
+    """
+    Insert transparent ``__neg_scope__`` markers near negation cues.
+
+    Lightweight bounded window (not a full parser). Handles both pre- and
+    post-predicate negation (*not good*, *acha nahi*, *اچھی نہیں*).
+    Keeps original tokens intact for error analysis.
+    """
+    tokens = text.split()
+    if not tokens:
+        return text
+    neg_idx = [i for i, t in enumerate(tokens) if t in _NEGATION_TOKENS]
+    if not neg_idx:
+        return text
+
+    mark_at: set[int] = set()
+    for ni in neg_idx:
+        # Window after negation (English-like: not good / not very good)
+        for j in range(ni + 1, min(len(tokens), ni + 1 + _NEGATION_SCOPE_WINDOW)):
+            if tokens[j] in _NEGATION_TOKENS:
+                break
+            if tokens[j] in _SCOPE_POLARITY or tokens[j] in _INTENSIFIERS:
+                mark_at.add(j)
+        # Window before negation (Roman/Urdu: acha nahi / اچھی نہیں)
+        for j in range(ni - 1, max(-1, ni - 1 - _NEGATION_SCOPE_WINDOW), -1):
+            if tokens[j] in _NEGATION_TOKENS:
+                break
+            if tokens[j] in _SCOPE_POLARITY:
+                mark_at.add(j)
+                break  # nearest predicate only for pre-negation
+
+    if not mark_at:
+        # Still emit a marker next to the negation cue so TF-IDF sees it
+        out: list[str] = []
+        for i, tok in enumerate(tokens):
+            out.append(tok)
+            if i in neg_idx:
+                out.append("__neg_scope__")
+        return " ".join(out)
+
+    out = []
+    for i, tok in enumerate(tokens):
+        out.append(tok)
+        if i in mark_at or i in neg_idx:
+            out.append("__neg_scope__")
+    return " ".join(out)
 
 
 def _emphasize_polarity_intensity(text: str) -> str:
@@ -324,6 +409,7 @@ def clean_text(text: Any) -> str:
     text = _canonicalize_negation_spellings(text)
     text = _emphasize_contrast_clause(text)
     text = _emphasize_polarity_intensity(text)
+    text = _emphasize_negation_scope(text)
     return _WHITESPACE_RE.sub(" ", text).strip()
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 from src.config import (
     DEFAULT_PROCESSED_CSV,
@@ -23,7 +23,23 @@ from src.ingest import (
     prepare_for_training,
     read_tabular_path,
 )
+from src.leakage import (
+    PROVENANCE_COLUMN,
+    SOURCE_COLUMN,
+    TEMPLATE_FAMILY_COLUMN,
+    assert_no_partition_leakage,
+    normalize_for_dedupe,
+)
 from src.preprocessing import clean_text, contains_urdu_script
+
+# Metadata columns preserved through validation when present
+_OPTIONAL_META_COLS = (
+    "language",
+    SOURCE_COLUMN,
+    PROVENANCE_COLUMN,
+    TEMPLATE_FAMILY_COLUMN,
+    "annotation_status",
+)
 
 
 class DatasetError(ValueError):
@@ -192,12 +208,17 @@ def validate_reviews_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     )
     working = working[working[TEXT_COLUMN].str.strip() != ""]
 
-    # Drop duplicate texts (case/whitespace-insensitive) to reduce leakage risk
+    # Drop duplicate texts (exact raw, then normalized) to reduce leakage risk
     working["_dedupe_key"] = (
         working[TEXT_COLUMN].astype(str).str.strip().str.lower()
     )
     working = working.drop_duplicates(subset=["_dedupe_key"], keep="first")
-    working = working.drop(columns=["_dedupe_key"]).reset_index(drop=True)
+    working["_norm_key"] = working[TEXT_COLUMN].map(normalize_for_dedupe)
+    working = working[working["_norm_key"] != ""]
+    working = working.drop_duplicates(subset=["_norm_key"], keep="first")
+    working = working.drop(columns=["_dedupe_key", "_norm_key"]).reset_index(
+        drop=True
+    )
 
     if working.empty:
         raise DatasetError(
@@ -211,7 +232,15 @@ def validate_reviews_dataframe(df: pd.DataFrame) -> pd.DataFrame:
             "(e.g. positive and negative) after cleaning."
         )
 
-    return working
+    # Keep optional metadata columns for source-aware evaluation
+    keep = [TEXT_COLUMN, LABEL_COLUMN] + [
+        c for c in _OPTIONAL_META_COLS if c in working.columns
+    ]
+    # Preserve any other non-temp columns already present
+    for c in working.columns:
+        if c not in keep and not str(c).startswith("_"):
+            keep.append(c)
+    return working[keep]
 
 
 def class_counts(df: pd.DataFrame) -> dict[str, int]:
@@ -244,9 +273,28 @@ def stratified_split(
     test_size: float = TEST_SIZE,
     random_state: int = RANDOM_SEED,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Stratified train/test split on label. Raises if too small for stratification."""
+    """
+    Stratified train/test split on label.
+
+    When ``template_family`` is present with synthetic families, uses a
+    group-aware split so the same template skeleton cannot appear in both
+    partitions (synthetic must not dominate evaluation via leakage).
+    """
     if len(df) < 4:
         raise DatasetError("Need at least 4 rows to create a train/test split.")
+
+    if TEMPLATE_FAMILY_COLUMN in df.columns:
+        families = df[TEMPLATE_FAMILY_COLUMN].astype(str).fillna("none")
+        # Only enforce grouping for non-trivial synthetic families
+        synthetic_mask = families.str.startswith("syn_")
+        if synthetic_mask.sum() >= 10 and families[synthetic_mask].nunique() >= 2:
+            try:
+                return _template_family_split(
+                    df, test_size=test_size, random_state=random_state
+                )
+            except Exception:
+                # Fall back to stratified if groups are pathological
+                pass
 
     try:
         train_df, test_df = train_test_split(
@@ -261,14 +309,58 @@ def stratified_split(
     return train_df.reset_index(drop=True), test_df.reset_index(drop=True)
 
 
-def assert_no_text_leakage(train_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
-    """Raise DatasetError if identical texts appear in both splits."""
-    train_texts = set(train_df[TEXT_COLUMN].astype(str).str.strip().str.lower())
-    test_texts = set(test_df[TEXT_COLUMN].astype(str).str.strip().str.lower())
-    overlap = train_texts & test_texts
-    if overlap:
-        sample = list(overlap)[:3]
-        raise DatasetError(
-            f"Train/test leakage detected: {len(overlap)} shared texts. "
-            f"Examples: {sample}"
+def _template_family_split(
+    df: pd.DataFrame,
+    *,
+    test_size: float,
+    random_state: int,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Split so each synthetic template_family is wholly in train or test.
+
+    Non-synthetic rows (family == none / curated) are stratified separately and
+    concatenated, keeping evaluation free of template memorization.
+    """
+    families = df[TEMPLATE_FAMILY_COLUMN].astype(str).fillna("none")
+    is_syn = families.str.startswith("syn_")
+    syn_df = df.loc[is_syn].copy()
+    other_df = df.loc[~is_syn].copy()
+
+    parts_train: list[pd.DataFrame] = []
+    parts_test: list[pd.DataFrame] = []
+
+    if not syn_df.empty:
+        groups = syn_df[TEMPLATE_FAMILY_COLUMN].astype(str)
+        gss = GroupShuffleSplit(
+            n_splits=1, test_size=test_size, random_state=random_state
         )
+        train_idx, test_idx = next(gss.split(syn_df, syn_df[LABEL_COLUMN], groups))
+        parts_train.append(syn_df.iloc[train_idx])
+        parts_test.append(syn_df.iloc[test_idx])
+
+    if not other_df.empty:
+        if other_df[LABEL_COLUMN].nunique() >= 2 and len(other_df) >= 4:
+            tr, te = train_test_split(
+                other_df,
+                test_size=test_size,
+                random_state=random_state,
+                stratify=other_df[LABEL_COLUMN],
+            )
+        else:
+            tr, te = train_test_split(
+                other_df, test_size=test_size, random_state=random_state
+            )
+        parts_train.append(tr)
+        parts_test.append(te)
+
+    train_df = pd.concat(parts_train, ignore_index=True)
+    test_df = pd.concat(parts_test, ignore_index=True)
+    return train_df.reset_index(drop=True), test_df.reset_index(drop=True)
+
+
+def assert_no_text_leakage(train_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
+    """
+    Raise DatasetError if identical / normalized texts or template families
+    appear in both splits.
+    """
+    assert_no_partition_leakage(train_df, test_df, allow_near_duplicates=True)

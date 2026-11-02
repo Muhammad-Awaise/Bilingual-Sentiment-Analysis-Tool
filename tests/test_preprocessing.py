@@ -61,11 +61,54 @@ def test_negation_preservation_roman_urdu():
 
 
 def test_negation_spelling_canonicalization():
-    """Closed-set map: nahin/nae/nhi → nahi (see LINGUISTIC_DECISIONS)."""
+    """Closed-set map: nahin/nae/nhi/naheeen → nahi (see LINGUISTIC_DECISIONS)."""
     out = clean_text("Product acha nahin hai")
     assert "nahi" in out
     assert "nahin" not in out
     assert "nahi" in clean_text("bohat acha nae hai")
+    assert "nahi" in clean_text("Product acha naheeen hai")
+    assert "naheeen" not in clean_text("Product acha naheeen hai")
+
+
+def test_negation_scope_english():
+    out = clean_text("I am not happy")
+    assert "not" in out
+    assert "__neg_scope__" in out
+    assert "__neg_intense__" in out  # happy locally negated
+
+
+def test_negation_scope_not_very_good():
+    out = clean_text("not very good")
+    assert "not" in out
+    assert "good" in out
+    assert "__neg_scope__" in out
+
+
+def test_negation_scope_roman_urdu():
+    out = clean_text("yeh product acha nahi hai")
+    assert "nahi" in out
+    assert "__neg_scope__" in out
+
+
+def test_negation_scope_urdu_script():
+    out = clean_text("یہ چیز اچھی نہیں ہے")
+    assert "نہیں" in out
+    assert "__neg_scope__" in out
+
+
+def test_although_contrast():
+    out = clean_text("Although packaging looked fine the item is broken")
+    assert "__contrast__" in out
+    assert "although" in out
+
+
+def test_no_aggressive_roman_urdu_normalization():
+    """qlty / zabrdast / achi / bohat must remain as written."""
+    out = clean_text("Qlty zabrdast hai achi bohat")
+    assert "qlty" in out
+    assert "zabrdast" in out
+    assert "achi" in out
+    assert "bohat" in out
 
 
 def test_contrast_preservation():

@@ -24,7 +24,12 @@ from src.config import (
     SUPPORTED_LABELS,
     URDU_WEAK_SCORE_MAX,
 )
+from src.language_profile import detect_script_composition
 from src.preprocessing import clean_text, contains_urdu_script, is_effectively_empty
+
+# Hybrid post-hoc marker overrides — evaluated separately from the statistical model.
+# Default True preserves existing behaviour; set False for pure ML predictions.
+DEFAULT_USE_HYBRID_HEURISTICS = True
 
 
 def _intensity_tie_break(cleaned: str) -> str | None:
@@ -202,6 +207,8 @@ def predict_one(
     text: Any,
     artifact_path: str | Path | None = None,
     payload: dict[str, Any] | None = None,
+    *,
+    use_hybrid_heuristics: bool = DEFAULT_USE_HYBRID_HEURISTICS,
 ) -> dict[str, Any]:
     """Predict sentiment for a single review."""
     if text is None or (isinstance(text, float) and np.isnan(text)):
@@ -220,8 +227,10 @@ def predict_one(
     payload = payload or load_model(artifact_path)
     pipeline = payload["pipeline"]
     model_name = payload.get("model_name", MODEL_NAME)
+    composition = detect_script_composition(text)
 
     pred = str(pipeline.predict([text])[0])  # preprocessor runs inside vectorizer
+    raw_model_pred = pred
     if pred not in SUPPORTED_LABELS:
         # Guard against unexpected label encoding on older artifacts
         if pred in {"1", "pos", LABEL_POSITIVE}:
@@ -235,17 +244,25 @@ def predict_one(
 
     scores = _decision_score(pipeline, [text])
     proba_row = _class_proba_row(pipeline, text)
-    pred = _apply_neutral_if_uncertain(
-        pred, scores[0], pipeline, proba_row, cleaned_text=cleaned
+    if use_hybrid_heuristics:
+        pred = _apply_neutral_if_uncertain(
+            pred, scores[0], pipeline, proba_row, cleaned_text=cleaned
+        )
+    low_confidence = bool(
+        scores[0] is not None and float(scores[0]) < NEUTRAL_MULTICLASS_FLOOR
     )
     return {
         "text": text,
         "cleaned_text": cleaned,
         "prediction": str(pred),
+        "raw_model_prediction": str(raw_model_pred),
+        "hybrid_heuristics_applied": bool(use_hybrid_heuristics),
         "model_name": model_name,
         "model_score": scores[0],
         "score_note": _score_note(payload),
         "calibrated": bool(payload.get("calibrated", False)),
+        "language_composition": composition,
+        "low_confidence": low_confidence,
         "limitations": LIMITATIONS_BLURB,
     }
 

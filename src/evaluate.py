@@ -23,9 +23,12 @@ from sklearn.metrics import (
     recall_score,
 )
 
+from src.calibration_eval import evaluate_calibration
 from src.config import (
     CONFUSION_MATRIX_PATH,
+    FIXTURES_DIR,
     HOLDOUT_SPLIT_PATH,
+    LABEL_NEUTRAL,
     LABEL_ORDER,
     LABEL_POSITIVE,
     METRICS_JSON_PATH,
@@ -34,6 +37,7 @@ from src.config import (
     MODEL_COMPARISON_PATH,
     REPORTS_DIR,
 )
+from src.neutral_analysis import neutral_class_metrics
 
 
 class EvaluationError(ValueError):
@@ -88,6 +92,48 @@ def compute_metrics(y_true, y_pred, labels: list[str] | None = None) -> dict[str
                 y_true, y_pred, labels=label_list, average="macro", zero_division=0
             ),
         ),
+        "f1_weighted": _finite_or_raise(
+            "f1_weighted",
+            f1_score(
+                y_true, y_pred, labels=label_list, average="weighted", zero_division=0
+            ),
+        ),
+        "per_class": {
+            lab: {
+                "precision": _finite_or_raise(
+                    f"precision_{lab}",
+                    precision_score(
+                        y_true,
+                        y_pred,
+                        labels=[lab],
+                        average="macro",
+                        zero_division=0,
+                    ),
+                ),
+                "recall": _finite_or_raise(
+                    f"recall_{lab}",
+                    recall_score(
+                        y_true,
+                        y_pred,
+                        labels=[lab],
+                        average="macro",
+                        zero_division=0,
+                    ),
+                ),
+                "f1": _finite_or_raise(
+                    f"f1_{lab}",
+                    f1_score(
+                        y_true,
+                        y_pred,
+                        labels=[lab],
+                        average="macro",
+                        zero_division=0,
+                    ),
+                ),
+                "support": int(sum(1 for y in y_true if str(y) == lab)),
+            }
+            for lab in label_list
+        },
         "confusion_matrix": cm.tolist(),
         "classification_report": classification_report(
             y_true,
@@ -98,6 +144,137 @@ def compute_metrics(y_true, y_pred, labels: list[str] | None = None) -> dict[str
         ),
     }
     return metrics
+
+
+def per_source_metrics(
+    y_true,
+    y_pred,
+    sources,
+    labels: list[str] | None = None,
+) -> dict[str, Any]:
+    """Macro metrics sliced by dataset source (only sources present)."""
+    label_list = labels or list(LABEL_ORDER)
+    y_true = list(y_true)
+    y_pred = list(y_pred)
+    sources = list(sources)
+    if not (len(y_true) == len(y_pred) == len(sources)):
+        raise EvaluationError("per-source inputs must have equal length.")
+
+    out: dict[str, Any] = {}
+    for src in sorted(set(str(x) for x in sources)):
+        if src in {"", "nan", "none"}:
+            continue
+        idx = [i for i, s in enumerate(sources) if str(s) == src]
+        if len(idx) < 2:
+            continue
+        yt = [y_true[i] for i in idx]
+        yp = [y_pred[i] for i in idx]
+        m = compute_metrics(yt, yp, labels=label_list)
+        block = {
+            "n_samples": m["n_samples"],
+            "accuracy": m["accuracy"],
+            "f1_macro": m["f1_macro"],
+            "precision_macro": m["precision_macro"],
+            "recall_macro": m["recall_macro"],
+        }
+        if LABEL_NEUTRAL in m.get("per_class", {}):
+            block["neutral_f1"] = m["per_class"][LABEL_NEUTRAL]["f1"]
+        out[src] = block
+    return out
+
+
+def evaluate_challenge_set(
+    pipe,
+    fixture_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """
+    Linguistic challenge-set evaluation.
+
+    Probes are manually reviewed fixtures — predictions are NOT forced to match
+    expected labels. Reports accuracy / errors for research transparency.
+    """
+    path = Path(fixture_path) if fixture_path else FIXTURES_DIR / "linguistic_examples.csv"
+    if not path.exists():
+        return {
+            "available": False,
+            "notes": f"Challenge fixture missing: {path}",
+        }
+    import pandas as pd
+
+    df = pd.read_csv(path, encoding="utf-8")
+    # Flexible column names
+    text_col = "text" if "text" in df.columns else df.columns[0]
+    label_col = next(
+        (
+            c
+            for c in ("label", "expected_sentiment", "gold_label", "sentiment")
+            if c in df.columns
+        ),
+        None,
+    )
+    category_col = next(
+        (c for c in ("category", "phenomenon", "challenge") if c in df.columns),
+        None,
+    )
+    if label_col is None:
+        return {"available": False, "notes": "No label column in challenge fixture."}
+
+    texts = df[text_col].astype(str).tolist()
+    y_true = df[label_col].astype(str).str.lower().tolist()
+    y_pred = [str(p).lower() for p in pipe.predict(texts)]
+    categories = (
+        df[category_col].astype(str).tolist()
+        if category_col
+        else ["unspecified"] * len(df)
+    )
+
+    correct = sum(1 for a, b in zip(y_true, y_pred) if a == b)
+    errors = [
+        {
+            "text": texts[i][:200],
+            "gold": y_true[i],
+            "predicted": y_pred[i],
+            "category": categories[i],
+        }
+        for i in range(len(texts))
+        if y_true[i] != y_pred[i]
+    ]
+    by_cat: dict[str, dict[str, Any]] = {}
+    for cat in sorted(set(categories)):
+        idx = [i for i, c in enumerate(categories) if c == cat]
+        if not idx:
+            continue
+        yt = [y_true[i] for i in idx]
+        yp = [y_pred[i] for i in idx]
+        cat_correct = sum(1 for a, b in zip(yt, yp) if a == b)
+        entry: dict[str, Any] = {
+            "n": len(idx),
+            "correct": cat_correct,
+            "incorrect": len(idx) - cat_correct,
+            "accuracy": cat_correct / len(idx) if idx else 0.0,
+        }
+        if len(idx) >= 4 and len(set(yt)) >= 2:
+            entry["f1_macro"] = float(
+                f1_score(yt, yp, average="macro", zero_division=0)
+            )
+        by_cat[cat] = entry
+
+    return {
+        "available": True,
+        "n_examples": len(texts),
+        "correct": correct,
+        "incorrect": len(texts) - correct,
+        "accuracy": correct / len(texts) if texts else 0.0,
+        "f1_macro": float(f1_score(y_true, y_pred, average="macro", zero_division=0))
+        if len(set(y_true)) >= 2
+        else None,
+        "by_category": by_cat,
+        "error_examples": errors[:25],
+        "notes": (
+            "Challenge-set labels are linguistic probes for error analysis. "
+            "The model is not forced to predict the expected label."
+        ),
+    }
 
 
 def _positive_scores(pipe, X) -> np.ndarray | None:
@@ -267,20 +444,28 @@ def _metrics_for_artifact(
     metrics["test_size"] = int(payload.get("test_size", len(y_test)))
     metrics["class_counts_full"] = payload.get("class_counts_full", {})
     metrics["language_counts_full"] = payload.get("language_counts_full", {})
+    metrics["source_counts_full"] = payload.get("source_counts_full", {})
+    metrics["provenance_counts_full"] = payload.get("provenance_counts_full", {})
     metrics["data_path"] = payload.get("data_path", "")
     metrics["calibrated"] = bool(payload.get("calibrated", False))
     metrics["class_weight"] = payload.get("class_weight", None)
     metrics["tuned"] = bool(payload.get("tuned", False))
     metrics["tune_meta"] = payload.get("tune_meta")
+    metrics["random_seed"] = payload.get("random_seed")
     metrics["delta_f1_vs_majority_baseline"] = float(
         metrics["f1_macro"] - metrics["majority_baseline_accuracy"]
     )
+    metrics["neutral_analysis"] = neutral_class_metrics(y_test, y_pred)
 
     scores = _positive_scores(pipe, X_test)
     if scores is not None:
         pr = compute_pr_auc(y_test, scores)
         if pr is not None:
             metrics["pr_auc_positive"] = pr
+            metrics["pr_auc_positive_note"] = (
+                "One-vs-rest average precision for the positive class "
+                "(positive=1, all other labels=0)."
+            )
 
     lang_test = split_data.get("lang_test")
     if lang_test is not None and len(lang_test) == len(y_test):
@@ -288,12 +473,28 @@ def _metrics_for_artifact(
             y_test, y_pred, lang_test, labels=list(LABEL_ORDER)
         )
 
+    source_test = split_data.get("source_test")
+    if source_test is not None and len(source_test) == len(y_test):
+        metrics["per_source"] = per_source_metrics(
+            y_test, y_pred, source_test, labels=list(LABEL_ORDER)
+        )
+
+    provenance_test = split_data.get("provenance_test")
+    if provenance_test is not None and len(provenance_test) == len(y_test):
+        # Reuse per_source helper for provenance slices (esp. synthetic vs real Urdu)
+        metrics["per_provenance"] = per_source_metrics(
+            y_test, y_pred, provenance_test, labels=list(LABEL_ORDER)
+        )
+
+    metrics["calibration"] = evaluate_calibration(pipe, X_test, y_test)
+    metrics["challenge_set"] = evaluate_challenge_set(pipe)
+
     metrics["notes"] = (
         "Metrics are computed on a held-out stratified test set created during "
         "training. They are not hardcoded. Macro F1 and PR-AUC are preferred over "
-        "accuracy when classes are imbalanced. Small curated subsets yield "
-        "optimistic or unstable estimates and should not be treated as large-scale "
-        "benchmarks."
+        "accuracy when classes are imbalanced. Small curated subsets and synthetic "
+        "Urdu templates can yield optimistic language-slice scores — check "
+        "per_provenance. Calibration scores are approximate confidence, not certainty."
     )
     return metrics
 
@@ -445,6 +646,7 @@ def _format_md(metrics: dict[str, Any]) -> str:
         f"| Precision (macro) | {metrics['precision_macro']:.4f} |",
         f"| Recall (macro) | {metrics['recall_macro']:.4f} |",
         f"| F1 (macro) | {metrics['f1_macro']:.4f} |",
+        f"| F1 (weighted) | {metrics.get('f1_weighted', float('nan')):.4f} |",
         f"| Majority-class baseline accuracy | {metrics['majority_baseline_accuracy']:.4f} |",
         f"| Δ F1 vs majority baseline | {metrics.get('delta_f1_vs_majority_baseline', 0):.4f} |",
     ]
@@ -457,6 +659,38 @@ def _format_md(metrics: dict[str, Any]) -> str:
             "",
         ]
     )
+
+    per_class = metrics.get("per_class") or {}
+    if per_class:
+        lines.extend(
+            [
+                "## Per-class metrics",
+                "",
+                "| Class | Precision | Recall | F1 | Support |",
+                "|-------|-----------|--------|----|---------|",
+            ]
+        )
+        for lab, block in per_class.items():
+            lines.append(
+                f"| {lab} | {block['precision']:.4f} | {block['recall']:.4f} | "
+                f"{block['f1']:.4f} | {block['support']} |"
+            )
+        lines.append("")
+
+    neu = metrics.get("neutral_analysis") or {}
+    if neu.get("neutral_present"):
+        lines.extend(
+            [
+                "## Neutral analysis",
+                "",
+                f"- Support: {neu.get('support')}",
+                f"- Precision / Recall / F1: {neu.get('precision'):.4f} / "
+                f"{neu.get('recall'):.4f} / {neu.get('f1'):.4f}",
+                f"- Gold Neutral → other: {neu.get('true_neutral_predicted_as')}",
+                f"- Other → predicted Neutral: {neu.get('predicted_neutral_but_true')}",
+                "",
+            ]
+        )
 
     per_lang = metrics.get("per_language") or {}
     if per_lang:
@@ -474,6 +708,51 @@ def _format_md(metrics: dict[str, Any]) -> str:
                 f"{block['f1_macro']:.4f} |"
             )
         lines.append("")
+
+    per_src = metrics.get("per_source") or {}
+    if per_src:
+        lines.extend(
+            [
+                "## Per-source metrics",
+                "",
+                "| Source | N | Accuracy | F1 (macro) |",
+                "|--------|---|----------|------------|",
+            ]
+        )
+        for src, block in per_src.items():
+            lines.append(
+                f"| {src} | {block['n_samples']} | {block['accuracy']:.4f} | "
+                f"{block['f1_macro']:.4f} |"
+            )
+        lines.append("")
+
+    cal = metrics.get("calibration") or {}
+    if cal.get("available"):
+        lines.extend(
+            [
+                "## Calibration",
+                "",
+                f"- Brier score: {cal.get('brier_score'):.4f}",
+                f"- ECE: {cal.get('expected_calibration_error'):.4f}",
+                f"- Mean confidence: {cal.get('confidence_distribution', {}).get('mean')}",
+                f"- Note: {cal.get('notes')}",
+                "",
+            ]
+        )
+
+    challenge = metrics.get("challenge_set") or {}
+    if challenge.get("available"):
+        lines.extend(
+            [
+                "## Challenge set",
+                "",
+                f"- N: {challenge.get('n_examples')} | correct: {challenge.get('correct')} | "
+                f"incorrect: {challenge.get('incorrect')} | "
+                f"accuracy: {challenge.get('accuracy'):.4f}",
+                f"- Note: {challenge.get('notes')}",
+                "",
+            ]
+        )
 
     lines.extend(
         [

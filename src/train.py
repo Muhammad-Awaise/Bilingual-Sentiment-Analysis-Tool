@@ -48,7 +48,17 @@ from src.data_loader import (
     prepare_processed,
     stratified_split,
 )
+from src.daraz_eval import exclude_daraz_from_training
+from src.leakage import (
+    PROVENANCE_COLUMN,
+    SOURCE_COLUMN,
+    TEMPLATE_FAMILY_COLUMN,
+    build_leakage_report,
+    fingerprint_texts,
+)
+from src.neutral_analysis import class_distribution_report
 from src.preprocessing import clean_text
+from src.reproducibility import build_run_metadata, write_run_metadata
 from src.urdu_augment import build_urdu_script_corpus
 
 
@@ -88,8 +98,13 @@ def _augment_with_curated_urdu_and_neutral(df):
     return merged.drop(columns=["_dedupe"]).reset_index(drop=True)
 
 
-def _oversample_rare_train_rows(train_df):
-    """Repeat Neutral / Urdu rows in *train only* so rare classes are learnable."""
+def _oversample_rare_train_rows(train_df, *, mild_neutral: bool = True):
+    """
+    Repeat Neutral / Urdu rows in *train only* so rare classes are learnable.
+
+    Controlled: Neutral upsampling is capped mildly when genuine Neutral volume
+    is already adequate. Never invents Neutral labels.
+    """
     import pandas as pd
 
     if train_df is None or train_df.empty:
@@ -101,14 +116,29 @@ def _oversample_rare_train_rows(train_df):
         & (train_df[LABEL_COLUMN] != LABEL_NEUTRAL)
     ]
     parts = [train_df]
-    if not neutral.empty:
-        # Keep Neutral visible against a 70k+ Latin majority
-        reps = max(1, min(40, 4000 // max(len(neutral), 1)))
-        parts.append(pd.concat([neutral] * reps, ignore_index=True))
+    if not neutral.empty and mild_neutral:
+        # Cap aggressively if Neutral already plentiful (e.g. after UCI Neutral merge)
+        n_neu = len(neutral)
+        if n_neu < 500:
+            reps = max(1, min(20, 3000 // max(n_neu, 1)))
+            parts.append(pd.concat([neutral] * reps, ignore_index=True))
+        elif n_neu < 2000:
+            reps = max(1, min(3, 2500 // max(n_neu, 1)))
+            parts.append(pd.concat([neutral] * reps, ignore_index=True))
+        # else: genuine Neutral volume sufficient — no blind oversample
     if not urdu.empty:
-        # Target ~10k effective Urdu rows so char/word features stay dense
-        reps = max(1, min(20, 10000 // max(len(urdu), 1)))
-        parts.append(pd.concat([urdu] * reps, ignore_index=True))
+        # Prefer real/curated Urdu for denser features; still allow synthetic
+        realish = urdu
+        if PROVENANCE_COLUMN in urdu.columns:
+            preferred = urdu[
+                urdu[PROVENANCE_COLUMN]
+                .astype(str)
+                .isin({"real_urdu", "curated", "external_real"})
+            ]
+            if len(preferred) >= 20:
+                realish = preferred
+        reps = max(1, min(10, 8000 // max(len(realish), 1)))
+        parts.append(pd.concat([realish] * reps, ignore_index=True))
     if len(parts) == 1:
         return train_df
     return pd.concat(parts, ignore_index=True)
@@ -277,6 +307,7 @@ def train_and_save(
     calibrate: bool = True,
     tune: bool = False,
     write_processed: bool = False,
+    exclude_daraz: bool = False,
 ) -> dict[str, Any]:
     """
     Load data, split, fit pipeline on train only, save artifact, return metadata.
@@ -287,19 +318,38 @@ def train_and_save(
     reports_dir: where holdout_split.joblib and train_meta.json are written.
                  Defaults to project REPORTS_DIR. Tests should pass a temp dir
                  so they do not overwrite project reports.
+    exclude_daraz: if True, drop Daraz-sourced rows before split so Daraz can
+                   be evaluated externally.
     """
     resolved_data = Path(data_path) if data_path else resolve_default_train_csv()
     df = load_reviews_csv(resolved_data)
-    # Expanded set is binary Latin-heavy; merge curated Neutral + Urdu-script rows.
+    # Expanded set is Latin-heavy; merge curated Neutral + Urdu-script rows.
     if resolved_data.resolve() == EXPANDED_TRAIN_CSV.resolve() or (
         data_path is None and EXPANDED_TRAIN_CSV.exists()
     ):
         df = _augment_with_curated_urdu_and_neutral(df)
+    if exclude_daraz:
+        df = exclude_daraz_from_training(df)
     if write_processed:
         prepare_processed(df)
 
+    distribution = class_distribution_report(df)
+
     train_df, test_df = stratified_split(df)
-    assert_no_text_leakage(train_df, test_df)
+    leakage_report = assert_no_text_leakage(train_df, test_df)
+    # Persist full leakage report before fitting
+    reports = Path(reports_dir) if reports_dir is not None else REPORTS_DIR
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "leakage_report.json").write_text(
+        json.dumps(
+            leakage_report
+            if isinstance(leakage_report, dict)
+            else build_leakage_report(train_df, test_df),
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
     train_df = _oversample_rare_train_rows(train_df)
 
     X_train = train_df[TEXT_COLUMN].tolist()
@@ -308,6 +358,16 @@ def train_and_save(
     y_test = test_df[LABEL_COLUMN].tolist()
     lang_train = train_df[LANGUAGE_COLUMN].astype(str).tolist()
     lang_test = test_df[LANGUAGE_COLUMN].astype(str).tolist()
+    source_test = (
+        test_df[SOURCE_COLUMN].astype(str).tolist()
+        if SOURCE_COLUMN in test_df.columns
+        else None
+    )
+    provenance_test = (
+        test_df[PROVENANCE_COLUMN].astype(str).tolist()
+        if PROVENANCE_COLUMN in test_df.columns
+        else None
+    )
 
     pipe = build_pipeline(classifier=classifier, calibrate=calibrate)
     pipe, tune_meta = _fit_pipeline(
@@ -320,9 +380,7 @@ def train_and_save(
     )
 
     artifact = Path(artifact_path) if artifact_path else MODEL_ARTIFACT_PATH
-    reports = Path(reports_dir) if reports_dir is not None else REPORTS_DIR
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    reports.mkdir(parents=True, exist_ok=True)
 
     payload = {
         "pipeline": pipe,
@@ -340,6 +398,42 @@ def train_and_save(
         "language_counts_full": (
             df[LANGUAGE_COLUMN].astype(str).value_counts().to_dict()
         ),
+        "provenance_counts_full": (
+            df[PROVENANCE_COLUMN].astype(str).value_counts().to_dict()
+            if PROVENANCE_COLUMN in df.columns
+            else {}
+        ),
+        "source_counts_full": (
+            df[SOURCE_COLUMN].astype(str).value_counts().to_dict()
+            if SOURCE_COLUMN in df.columns
+            else {}
+        ),
+        "exclude_daraz": bool(exclude_daraz),
+        "text_fingerprint_train": fingerprint_texts(X_train),
+        "distribution_report": distribution,
+        "preprocessing": {
+            "clean_text": True,
+            "nahi_normalization": True,
+            "negation_scope": True,
+            "contrast_clause_repeat": True,
+            "intensity_markers": True,
+        },
+        "vectorizer": {
+            "word_max_features": MAX_FEATURES,
+            "word_ngram_range": list(NGRAM_RANGE),
+            "char_max_features": CHAR_MAX_FEATURES,
+            "char_ngram_range": list(CHAR_NGRAM_RANGE),
+        },
+        "classifier_params": {
+            "type": classifier,
+            "class_weight": "balanced",
+        },
+        "calibration": {
+            "method": "sigmoid" if calibrate and classifier == "linearsvc" else (
+                "native_predict_proba" if classifier == "logreg" else "none"
+            ),
+            "enabled": bool(calibrate),
+        },
     }
     joblib.dump(payload, artifact)
 
@@ -352,25 +446,45 @@ def train_and_save(
             "y_train": y_train,
             "lang_test": lang_test,
             "lang_train": lang_train,
+            "source_test": source_test,
+            "provenance_test": provenance_test,
             "majority_baseline_accuracy": majority_baseline_accuracy(y_test),
         },
         split_path,
     )
 
-    meta: dict[str, Any] = {
-        "artifact_path": str(artifact),
-        "split_path": str(split_path),
-        "model_name": payload["model_name"],
-        "train_size": len(train_df),
-        "test_size": len(test_df),
-        "class_counts": class_counts(df),
-        "language_counts": payload["language_counts_full"],
-        "majority_baseline_accuracy_on_test": majority_baseline_accuracy(y_test),
-        "calibrated": bool(getattr(pipe, "is_calibrated", False)),
-        "tuned": bool(tune),
-        "data_path": str(resolved_data),
-        "reports_dir": str(reports),
-    }
+    run_meta = build_run_metadata(
+        data_path=resolved_data,
+        n_records=len(df),
+        class_counts=class_counts(df),
+        language_counts=payload["language_counts_full"],
+        provenance_counts=payload["provenance_counts_full"],
+        source_counts=payload["source_counts_full"],
+        random_seed=RANDOM_SEED,
+        preprocessing=payload["preprocessing"],
+        vectorizer=payload["vectorizer"],
+        classifier=payload["classifier_params"],
+        calibration=payload["calibration"],
+        artifact_path=artifact,
+        extra={
+            "artifact_path": str(artifact),
+            "split_path": str(split_path),
+            "model_name": payload["model_name"],
+            "train_size": len(train_df),
+            "test_size": len(test_df),
+            "majority_baseline_accuracy_on_test": majority_baseline_accuracy(y_test),
+            "calibrated": bool(getattr(pipe, "is_calibrated", False)),
+            "tuned": bool(tune),
+            "data_path": str(resolved_data),
+            "reports_dir": str(reports),
+            "exclude_daraz": bool(exclude_daraz),
+            "distribution_warnings": distribution.get("warnings"),
+            "tune_meta": tune_meta,
+        },
+    )
+    write_run_metadata(run_meta, reports / TRAIN_META_PATH.name)
+
+    meta: dict[str, Any] = dict(run_meta)
     if tune_meta:
         meta["tune_meta"] = tune_meta
 
@@ -460,6 +574,14 @@ def main() -> None:
         default=None,
         help="Directory for holdout split + train_meta (default: reports/)",
     )
+    parser.add_argument(
+        "--exclude-daraz",
+        action="store_true",
+        help=(
+            "Drop Daraz-sourced rows before training so Daraz can be evaluated "
+            "as a true external test set"
+        ),
+    )
     args = parser.parse_args()
 
     try:
@@ -472,6 +594,7 @@ def main() -> None:
             calibrate=not args.no_calibrate,
             tune=args.tune,
             write_processed=True,
+            exclude_daraz=args.exclude_daraz,
         )
     except DatasetError as exc:
         raise SystemExit(f"Training failed: {exc}") from exc

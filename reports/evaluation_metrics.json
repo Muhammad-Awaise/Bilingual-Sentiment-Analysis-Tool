@@ -4,121 +4,428 @@
     "neutral",
     "positive"
   ],
-  "n_samples": 15233,
-  "accuracy": 0.8808507844810608,
-  "precision_macro": 0.9090627074014116,
-  "recall_macro": 0.8918641985432968,
-  "f1_macro": 0.9002422133367601,
+  "n_samples": 15116,
+  "accuracy": 0.8782085207726912,
+  "precision_macro": 0.9080546288347772,
+  "recall_macro": 0.8945898373976781,
+  "f1_macro": 0.901171616488862,
+  "f1_weighted": 0.877912666509193,
+  "per_class": {
+    "negative": {
+      "precision": 0.8449936398328185,
+      "recall": 0.8250532292405962,
+      "f1": 0.8349043899811474,
+      "support": 5636
+    },
+    "neutral": {
+      "precision": 0.9824561403508771,
+      "recall": 0.9491525423728814,
+      "f1": 0.9655172413793104,
+      "support": 59
+    },
+    "positive": {
+      "precision": 0.8967141063206362,
+      "recall": 0.9095637405795564,
+      "f1": 0.9030932181061285,
+      "support": 9421
+    }
+  },
   "confusion_matrix": [
     [
-      4732,
+      4650,
       1,
-      924
+      985
     ],
     [
-      3,
-      55,
-      1
+      1,
+      56,
+      2
     ],
     [
-      886,
+      852,
       0,
-      8631
+      8569
     ]
   ],
   "classification_report": {
     "negative": {
-      "precision": 0.8418430884184309,
-      "recall": 0.8364857698426728,
-      "f1-score": 0.8391558787018975,
-      "support": 5657.0
+      "precision": 0.8449936398328185,
+      "recall": 0.8250532292405962,
+      "f1-score": 0.8349043899811474,
+      "support": 5636.0
     },
     "neutral": {
-      "precision": 0.9821428571428571,
-      "recall": 0.9322033898305084,
-      "f1-score": 0.9565217391304348,
+      "precision": 0.9824561403508771,
+      "recall": 0.9491525423728814,
+      "f1-score": 0.9655172413793104,
       "support": 59.0
     },
     "positive": {
-      "precision": 0.9032021766429469,
-      "recall": 0.9069034359567091,
-      "f1-score": 0.9050490221779479,
-      "support": 9517.0
+      "precision": 0.8967141063206362,
+      "recall": 0.9095637405795564,
+      "f1-score": 0.9030932181061285,
+      "support": 9421.0
     },
-    "accuracy": 0.8808507844810608,
+    "accuracy": 0.8782085207726912,
     "macro avg": {
-      "precision": 0.9090627074014116,
-      "recall": 0.8918641985432968,
-      "f1-score": 0.9002422133367601,
-      "support": 15233.0
+      "precision": 0.9080546288347772,
+      "recall": 0.8945898373976781,
+      "f1-score": 0.901171616488862,
+      "support": 15116.0
     },
     "weighted avg": {
-      "precision": 0.8807213217925174,
-      "recall": 0.8808507844810608,
-      "f1-score": 0.8807779907104878,
-      "support": 15233.0
+      "precision": 0.877764796376368,
+      "recall": 0.8782085207726912,
+      "f1-score": 0.877912666509193,
+      "support": 15116.0
     }
   },
   "model_name": "TF-IDF + LinearSVC (calibrated)",
-  "majority_baseline_accuracy": 0.6247620298037156,
-  "train_size": 72525,
-  "test_size": 15233,
+  "majority_baseline_accuracy": 0.6232468907118285,
+  "train_size": 70925,
+  "test_size": 15116,
   "class_counts_full": {
-    "positive": 47587,
-    "negative": 28284,
+    "positive": 47106,
+    "negative": 28180,
     "neutral": 293
   },
   "language_counts_full": {
-    "english": 28637,
-    "roman_urdu": 25958,
-    "code_mixed": 15879,
+    "english": 28596,
+    "roman_urdu": 25899,
+    "code_mixed": 15395,
     "urdu": 5070,
-    "unknown": 620
+    "unknown": 619
+  },
+  "source_counts_full": {
+    "nan": 75579
+  },
+  "provenance_counts_full": {
+    "nan": 75579
   },
   "data_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\data\\processed\\reviews_train_expanded.csv",
   "calibrated": true,
   "class_weight": "balanced",
   "tuned": false,
   "tune_meta": null,
-  "delta_f1_vs_majority_baseline": 0.2754801835330445,
-  "pr_auc_positive": 0.9694044361777036,
+  "random_seed": 42,
+  "delta_f1_vs_majority_baseline": 0.27792472577703353,
+  "neutral_analysis": {
+    "neutral_present": true,
+    "support": 59,
+    "precision": 0.9824561403508771,
+    "recall": 0.9491525423728814,
+    "f1": 0.9655172413793104,
+    "true_neutral_predicted_as": {
+      "negative": 1,
+      "positive": 2
+    },
+    "predicted_neutral_but_true": {
+      "negative": 1
+    },
+    "confusion_matrix_labels": [
+      "negative",
+      "neutral",
+      "positive"
+    ],
+    "confusion_matrix": [
+      [
+        4650,
+        1,
+        985
+      ],
+      [
+        1,
+        56,
+        2
+      ],
+      [
+        852,
+        0,
+        8569
+      ]
+    ],
+    "notes": "Neutral errors split into (a) gold Neutral predicted Pos/Neg and (b) gold Pos/Neg predicted Neutral. Do not treat low Neutral F1 as fixed by blind oversampling."
+  },
+  "pr_auc_positive": 0.9676051083192522,
+  "pr_auc_positive_note": "One-vs-rest average precision for the positive class (positive=1, all other labels=0).",
   "per_language": {
     "code_mixed": {
-      "n_samples": 3152,
-      "accuracy": 0.9612944162436549,
-      "f1_macro": 0.6372706789623767,
-      "precision_macro": 0.6387587287084774,
-      "recall_macro": 0.6358527432425444
+      "n_samples": 3070,
+      "accuracy": 0.9625407166123778,
+      "f1_macro": 0.8606087400751187,
+      "precision_macro": 0.86292299702184,
+      "recall_macro": 0.8584487448316978
     },
     "english": {
-      "n_samples": 5740,
-      "accuracy": 0.8585365853658536,
-      "f1_macro": 0.8864889569739068,
-      "precision_macro": 0.8914309552113387,
-      "recall_macro": 0.8823180016239194
+      "n_samples": 5700,
+      "accuracy": 0.8603508771929824,
+      "f1_macro": 0.5539421413841947,
+      "precision_macro": 0.5606447912826185,
+      "recall_macro": 0.5485767363482045
     },
     "roman_urdu": {
-      "n_samples": 5160,
-      "accuracy": 0.8302325581395349,
-      "f1_macro": 0.5528912953824698,
-      "precision_macro": 0.5523160620696888,
-      "recall_macro": 0.5539333533230348
+      "n_samples": 5205,
+      "accuracy": 0.8222862632084534,
+      "f1_macro": 0.5472252243059865,
+      "precision_macro": 0.5468987897230329,
+      "recall_macro": 0.5476589499089277
     },
     "unknown": {
-      "n_samples": 138,
-      "accuracy": 0.9637681159420289,
-      "f1_macro": 0.6412284097402717,
-      "precision_macro": 0.644752534287418,
-      "recall_macro": 0.6384081781672143
+      "n_samples": 116,
+      "accuracy": 0.9568965517241379,
+      "f1_macro": 0.6373003215108478,
+      "precision_macro": 0.6381358513554676,
+      "recall_macro": 0.6365656565656566
     },
     "urdu": {
-      "n_samples": 1043,
+      "n_samples": 1025,
       "accuracy": 1.0,
       "f1_macro": 1.0,
       "precision_macro": 1.0,
       "recall_macro": 1.0
     }
   },
-  "notes": "Metrics are computed on a held-out stratified test set created during training. They are not hardcoded. Macro F1 and PR-AUC are preferred over accuracy when classes are imbalanced. Small curated subsets yield optimistic or unstable estimates and should not be treated as large-scale benchmarks.",
+  "per_source": {},
+  "per_provenance": {},
+  "calibration": {
+    "available": true,
+    "brier_score": 0.17522248766434373,
+    "expected_calibration_error": 0.007992359095498629,
+    "reliability_diagram": [
+      {
+        "bin_left": 0.0,
+        "bin_right": 0.1,
+        "count": 0,
+        "avg_confidence": NaN,
+        "accuracy": NaN
+      },
+      {
+        "bin_left": 0.1,
+        "bin_right": 0.2,
+        "count": 0,
+        "avg_confidence": NaN,
+        "accuracy": NaN
+      },
+      {
+        "bin_left": 0.2,
+        "bin_right": 0.30000000000000004,
+        "count": 0,
+        "avg_confidence": NaN,
+        "accuracy": NaN
+      },
+      {
+        "bin_left": 0.30000000000000004,
+        "bin_right": 0.4,
+        "count": 0,
+        "avg_confidence": NaN,
+        "accuracy": NaN
+      },
+      {
+        "bin_left": 0.4,
+        "bin_right": 0.5,
+        "count": 1,
+        "avg_confidence": 0.44028376715188006,
+        "accuracy": 1.0
+      },
+      {
+        "bin_left": 0.5,
+        "bin_right": 0.6000000000000001,
+        "count": 1132,
+        "avg_confidence": 0.5505384271918908,
+        "accuracy": 0.5441696113074205
+      },
+      {
+        "bin_left": 0.6000000000000001,
+        "bin_right": 0.7000000000000001,
+        "count": 1211,
+        "avg_confidence": 0.6519435161092111,
+        "accuracy": 0.6696944673823286
+      },
+      {
+        "bin_left": 0.7000000000000001,
+        "bin_right": 0.8,
+        "count": 1554,
+        "avg_confidence": 0.7523941029910519,
+        "accuracy": 0.750965250965251
+      },
+      {
+        "bin_left": 0.8,
+        "bin_right": 0.9,
+        "count": 2217,
+        "avg_confidence": 0.8552302411117615,
+        "accuracy": 0.8588182228236355
+      },
+      {
+        "bin_left": 0.9,
+        "bin_right": 1.0,
+        "count": 9001,
+        "avg_confidence": 0.9659624607512027,
+        "accuracy": 0.9750027774691701
+      }
+    ],
+    "confidence_distribution": {
+      "mean": 0.8714638377329366,
+      "std": 0.1385095499887169,
+      "min": 0.44028376715188006,
+      "max": 0.9998970861574513,
+      "p25": 0.7926705104332749,
+      "p50": 0.9336807965583609,
+      "p75": 0.9797825676270047,
+      "n": 15116
+    },
+    "notes": "Scores are sigmoid-calibrated class probabilities when the artifact used CalibratedClassifierCV. They are approximate confidence, not certainty about human sentiment."
+  },
+  "challenge_set": {
+    "available": true,
+    "n_examples": 29,
+    "correct": 27,
+    "incorrect": 2,
+    "accuracy": 0.9310344827586207,
+    "f1_macro": 0.8826576576576577,
+    "by_category": {
+      "code_switching": {
+        "n": 2,
+        "correct": 2,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "code_switching_script": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "contrast_although": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "contrast_code_switch": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "contrast_lekin": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "contrast_urdu_script": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "informal_spelling_neg": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "informal_spelling_pos": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "intensifier_negative": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "intensifier_positive": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "intensifier_urdu_script": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "mixed_sentiment": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_control": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_control_urdu": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_english": {
+        "n": 3,
+        "correct": 3,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_of_complaint": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_roman_urdu": {
+        "n": 3,
+        "correct": 3,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_spelling": {
+        "n": 2,
+        "correct": 2,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "negation_urdu_script": {
+        "n": 1,
+        "correct": 1,
+        "incorrect": 0,
+        "accuracy": 1.0
+      },
+      "neutral_factual": {
+        "n": 3,
+        "correct": 2,
+        "incorrect": 1,
+        "accuracy": 0.6666666666666666
+      },
+      "roman_urdu_variation": {
+        "n": 1,
+        "correct": 0,
+        "incorrect": 1,
+        "accuracy": 0.0
+      }
+    },
+    "error_examples": [
+      {
+        "text": "achi quality but late delivery",
+        "gold": "negative",
+        "predicted": "positive",
+        "category": "roman_urdu_variation"
+      },
+      {
+        "text": "The product arrived on time and matches the description",
+        "gold": "neutral",
+        "predicted": "positive",
+        "category": "neutral_factual"
+      }
+    ],
+    "notes": "Challenge-set labels are linguistic probes for error analysis. The model is not forced to predict the expected label."
+  },
+  "notes": "Metrics are computed on a held-out stratified test set created during training. They are not hardcoded. Macro F1 and PR-AUC are preferred over accuracy when classes are imbalanced. Small curated subsets and synthetic Urdu templates can yield optimistic language-slice scores \u2014 check per_provenance. Calibration scores are approximate confidence, not certainty.",
   "confusion_matrix_path": "C:\\Users\\GrowMore Devs\\Desktop\\Projects\\Bilingual-Sentiment-Analysis-Tool\\reports\\confusion_matrix.png"
 }

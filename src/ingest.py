@@ -145,9 +145,11 @@ class IngestReport:
     encoding: str | None
     format: str
     empty_text_rows: int
+    duplicate_text_rows: int = 0
     label_counts: dict[str, int] = field(default_factory=dict)
     detected_languages: dict[str, int] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+    purpose: str = "prediction"  # prediction | evaluation | training
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -376,6 +378,20 @@ def build_ingest_report(
         ).sum()
     )
 
+    keys = df[text_col].map(
+        lambda x: ""
+        if x is None or (isinstance(x, float) and pd.isna(x))
+        else str(x).strip().lower()
+    )
+    nonempty = keys != ""
+    duplicate_text = int(nonempty.sum() - keys[nonempty].nunique())
+    if duplicate_text:
+        warnings.append(
+            f"{duplicate_text} duplicate review text row(s) detected "
+            "(case/whitespace-insensitive). Prediction keeps all rows; "
+            "training dedupes separately."
+        )
+
     if str(text_col).strip().lower() in _NON_TEXT_HINTS:
         warnings.append(
             f"Column '{text_col}' looks like metadata (id/language/date), not review text."
@@ -409,6 +425,7 @@ def build_ingest_report(
         n_rows=int(len(df)),
         n_columns=int(len(df.columns)),
         text_column=text_col,
+        duplicate_text_rows=duplicate_text,
         label_column=column_map.label,
         language_column=column_map.language,
         encoding=encoding,
@@ -514,6 +531,16 @@ def prepare_for_training(
         out[LANGUAGE_COLUMN] = out[TEXT_COLUMN].map(infer_language_fn)
     else:
         out[LANGUAGE_COLUMN] = "unknown"
+
+    # Preserve research metadata when already present (source / provenance / …)
+    for meta_col in (
+        "source",
+        "provenance",
+        "template_family",
+        "annotation_status",
+    ):
+        if meta_col in df.columns and meta_col not in out.columns:
+            out[meta_col] = df[meta_col].values
 
     return out
 

@@ -1,0 +1,184 @@
+{
+  "random_seed_note": 42,
+  "n_train": 60463,
+  "n_test": 15116,
+  "exact_raw_overlap_count": 0,
+  "exact_raw_overlap_examples": [],
+  "normalized_overlap_count": 0,
+  "normalized_overlap_examples": [],
+  "template_family_overlap_count": 0,
+  "template_family_overlap_examples": [],
+  "near_duplicate_across_partitions": [
+    {
+      "train_i": 48457,
+      "test_j": 1457,
+      "similarity": 1.0,
+      "train_text": "as some of you may know\\u002c we have a fish tank & this little guy is named Jeff Carter. sadly\\u002c i think he\\u2019s dying",
+      "test_text": "as some of you may know we have a fish tank & this little guy is named Jeff Carter. sadly\\u002c i think he\\u2019s dying."
+    },
+    {
+      "train_i": 13698,
+      "test_j": 2481,
+      "similarity": 0.9444,
+      "train_text": "Steve Emerson on Sun News Network with Michael Coren - Political correctness has damaged all aspects of life :: ... via",
+      "test_text": "Steve Emerson on Sun News Network with Michael Coren - Political correctness has damaged all aspects of life"
+    },
+    {
+      "train_i": 54763,
+      "test_j": 2999,
+      "similarity": 0.9286,
+      "train_text": "Floyd Mayweather Says Muhammad Ali Is the 5th Best Boxer of All Time",
+      "test_text": "Floyd Mayweather says Muhammad Ali is the 5th best boxer of all time via @user"
+    },
+    {
+      "train_i": 22035,
+      "test_j": 3755,
+      "similarity": 1.0,
+      "train_text": "this is very good product \ud83d\udc4d\ud83d\ude00",
+      "test_text": "this Product is Very Good \ud83d\udc4d"
+    },
+    {
+      "train_i": 50254,
+      "test_j": 5062,
+      "similarity": 1.0,
+      "train_text": "\"I'm going to Disney World , October 3rd . If you wanna come on down .. Come on down :-)\"",
+      "test_text": "@user I'm going to Disney world on October 3rd! If you wanna come on down, come on down!\""
+    },
+    {
+      "train_i": 39084,
+      "test_j": 5876,
+      "similarity": 0.9762,
+      "train_text": "je nahe pjhot nahe bolna chahea kyon k jhot to wakte faeda deta par is k bhot se nuksanat hein kuo k jab sach pata chalta he to sharmindage uthane parte he hame",
+      "test_text": "je nahe jhot nahe bolna chahea kyon k jhot to wakte faeda deta par is k bhot se nuksanat hein kuo k jab sach pata chalta he to sharmindage uthane parte he hame "
+    },
+    {
+      "train_i": 27650,
+      "test_j": 6489,
+      "similarity": 1.0,
+      "train_text": "very good quality..\nsatisfied with the product..\ud83d\udc4d",
+      "test_text": "Very good product. satisfied with the quality."
+    },
+    {
+      "train_i": 33662,
+      "test_j": 6986,
+      "similarity": 0.9615,
+      "train_text": "Our 1st XI went through against Liverpool 4th XI with a 2-1 victory AET thanks to an extra time winner from Man of the Match @user",
+      "test_text": "Our 1st XI went through against Liverpool 4th X1 with a 2-1 victory AET thanks to an extra time winner from Man of the Match @user"
+    },
+    {
+      "train_i": 51393,
+      "test_j": 8307,
+      "similarity": 0.9412,
+      "train_text": "Meri shadi k leyin duaa krin naik or achi waif atta frmay Rab e Kareem ameen jo",
+      "test_text": "Meri shadi k leyin duaa krin naik or achi waif atta frmay Rab e Kareem ameen"
+    },
+    {
+      "train_i": 41741,
+      "test_j": 8957,
+      "similarity": 0.9545,
+      "train_text": "\"Just for clarification, Spock is referring to time travel in that quote, it might be possible by Gingrich's 16th year in office.\"",
+      "test_text": "\"Just for clarification, Spock is referring to time travel in that quote, it which might be possible by Gingrich's 16th year in office.\""
+    },
+    {
+      "train_i": 17651,
+      "test_j": 9699,
+      "similarity": 0.9294,
+      "train_text": "drasul awaam ki buddi kharab ho gaye jo unhoun nay ghalat feslay lrna shuru kar diye hein ! ye hamari he ghalti hay jo ham apny sahi hukmranoun ko nahein chun p",
+      "test_text": "drasul awaam ki buddi kharab ho gaye jo unhoun nay ghalat feslay lrna shuru kar diye hein ! ye hamari he ghalti hay jo ham apny sahi hukmranoun ko nahein chun p"
+    },
+    {
+      "train_i": 2766,
+      "test_j": 10353,
+      "similarity": 0.9375,
+      "train_text": "got an amazing handsfree at a cheap price very good quality and \ud83d\udc4d\ud83d\udc4c sound fully satisfied ",
+      "test_text": "got an amazing gionee handsfree at a cheap price very good quality and \ud83d\udc4d\ud83d\udc4c sound  fully satisfied "
+    },
+    {
+      "train_i": 4948,
+      "test_j": 10801,
+      "similarity": 1.0,
+      "train_text": "super quality Good",
+      "test_text": "Super good quality"
+    },
+    {
+      "train_i": 45846,
+      "test_j": 11543,
+      "similarity": 1.0,
+      "train_text": "Come SUPPORT the SHOW/MOVEMENT at Parkdale High School on Oct 26th frm 8-11 w/ AJA\\u002c DREAMTEAM\\u002c HQB\\u002c DSB&HIB. LEAVE THE BULLSHIT AT THE DOOR\\u002c",
+      "test_text": "Come SUPPORT the SHOW/MOVEMENT at Parkdale High School on Oct 26th frm 8-11 w/ AJA\\u002c DREAMTEAM\\u002c HQB\\u002c DSB&HIB. LEAVE THE BULLSHIT AT THE DOOR."
+    },
+    {
+      "train_i": 48233,
+      "test_j": 11608,
+      "similarity": 0.9333,
+      "train_text": "Cliff Avril leaves Detroit Lions game with back injury: Detroit Lions defensive end Cliff Avril left Sunday\\u2019s ga...",
+      "test_text": "Cliff Avril leaves Detroit Lions game with back injury: Detroit Lions defensive end Cliff Avril left Sunday\\u2019s game..."
+    },
+    {
+      "train_i": 52341,
+      "test_j": 12230,
+      "similarity": 0.9286,
+      "train_text": "\"Kyle is going out for the first time tomorrow night, so proud lol\"",
+      "test_text": "@user Kyle is going out for the first time tomorrow night, so proud lol states?! @user"
+    },
+    {
+      "train_i": 15409,
+      "test_j": 12566,
+      "similarity": 1.0,
+      "train_text": "thanks seller and daraz",
+      "test_text": "Thanks daraz and seller."
+    },
+    {
+      "train_i": 35769,
+      "test_j": 12566,
+      "similarity": 1.0,
+      "train_text": "Thanks seller and thanks Daraz",
+      "test_text": "Thanks daraz and seller."
+    },
+    {
+      "train_i": 50226,
+      "test_j": 12566,
+      "similarity": 1.0,
+      "train_text": "thanks daraz and thanks seller ",
+      "test_text": "Thanks daraz and seller."
+    },
+    {
+      "train_i": 29719,
+      "test_j": 12889,
+      "similarity": 0.9412,
+      "train_text": "Price ka hissab sa acha shoes han orr same han bilkul jaisa pic ma show kia hoa han mugha umeed ni the waisa . lakin kaffi achi product ha Orr Saller or Sab bho",
+      "test_text": "Price ka hissab sa acha shoes han orr same han bilkul jaisa pic ma show kia hoa han mugha umeed ni the waisa . lakin kaffi achi product ha Orr Saller or Sab bho"
+    },
+    {
+      "train_i": 21207,
+      "test_j": 13684,
+      "similarity": 0.9375,
+      "train_text": "\"July 23rd is National Hot Dog Day, celebrate this day by biting into a delicious hotdog! #foodie #hotdog",
+      "test_text": "\"July 23rd is National Hot Dog Day, celebrate this day by biting into a delicious hotdog! #..."
+    },
+    {
+      "train_i": 15367,
+      "test_j": 14143,
+      "similarity": 0.9423,
+      "train_text": "originally posted by talha iqbal acha phir ap asa koi rashta dekha de jis k hum zaroor laga kar follow kare kiya parties pakistani nhi hai ise bar vote har sura",
+      "test_text": "originally posted by talha iqbal acha phir ap asa koi rashta dekha de jis k humzaroor laga kar follow kare kiya parties pakistani nhi hai ise bar vote har suraa"
+    },
+    {
+      "train_i": 5444,
+      "test_j": 14666,
+      "similarity": 0.9375,
+      "train_text": "\"Our Cameroun horror, by Boko Haram returnees  On August 3, Cameroonian authorities began the repatriation...",
+      "test_text": "\"Our Cameroun horror, by Boko Haram returnees: On  August 3,  Cameroonian authorities  began the repatriation o..."
+    }
+  ],
+  "near_duplicate_across_count": 23,
+  "source_counts_train": {
+    "nan": 60463
+  },
+  "source_counts_test": {
+    "nan": 15116
+  },
+  "has_leakage": true,
+  "severity_leakage": false,
+  "notes": "Near-duplicates use high-threshold token Jaccard on lightly normalized text. Spelling variants that share few tokens are intentionally not treated as leakage."
+}
