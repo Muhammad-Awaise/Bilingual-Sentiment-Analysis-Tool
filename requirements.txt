@@ -6,5 +6,6 @@ scikit-learn==1.7.2
 joblib==1.5.2
 streamlit==1.50.0
 matplotlib==3.10.7
+openpyxl==3.1.5
 pytest==8.4.2
 ruff==0.14.0

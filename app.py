@@ -7,8 +7,6 @@ Run locally:
 
 from __future__ import annotations
 
-import io
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
@@ -29,22 +27,19 @@ from src.export_results import (
     format_single_result_csv,
     make_distribution_figure,
 )
+from src.ingest import (
+    IngestError,
+    LABEL_COLUMN_CANDIDATES,
+    detect_column_map,
+    prepare_for_prediction,
+    read_tabular_bytes,
+)
 from src.predict import (
     PredictionError,
     load_model,
     predict_dataframe,
     predict_one,
     sentiment_summary,
-)
-
-_GOLD_COLUMN_CANDIDATES = (
-    "gold_label",
-    "label",
-    "sentiment",
-    "sentiments",
-    "true_label",
-    "actual",
-    "actual_sentiment",
 )
 
 st.set_page_config(
@@ -56,7 +51,7 @@ st.set_page_config(
 
 _NAV_PAGES = (
     "Single review",
-    "Batch CSV",
+    "Batch upload",
     "Evaluation",
     "Research",
 )
@@ -71,9 +66,19 @@ def _load_metrics():
 
 
 def _find_gold_column(df: pd.DataFrame) -> str | None:
+    """Prefer ingest label aliases; keep working if prediction cols exist too."""
     lower_map = {str(c).strip().lower(): c for c in df.columns}
-    for name in _GOLD_COLUMN_CANDIDATES:
-        if name in lower_map:
+    skip = {
+        "predicted_sentiment",
+        "prediction",
+        "model_score_not_probability",
+        "model_score",
+        "cleaned_review_text",
+        "cleaned_text",
+        "model_name",
+    }
+    for name in LABEL_COLUMN_CANDIDATES:
+        if name in lower_map and name not in skip:
             return lower_map[name]
     return None
 
@@ -328,16 +333,20 @@ def page_single(payload: dict) -> None:
 def page_batch(payload: dict) -> None:
     st.header("Batch review analysis")
     st.write(
-        "Upload a CSV with a review-text column. Files are treated as data only — "
-        "never executed. Max "
-        f"{MAX_BATCH_ROWS} rows / {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+        "Upload **any org table** with a review-text column "
+        "(CSV / TSV / Excel / JSON). Column names do not need to match our "
+        "curated schema — map them below. Files are data only, never executed. "
+        f"Max {MAX_BATCH_ROWS} rows / {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
     )
-    uploaded = st.file_uploader("CSV file", type=["csv"])
+    uploaded = st.file_uploader(
+        "Data file",
+        type=["csv", "tsv", "txt", "xlsx", "xls", "json", "jsonl"],
+    )
     if uploaded is None:
         return
 
     if uploaded.size is not None and uploaded.size > MAX_UPLOAD_BYTES:
-        st.error("File is too large. Please upload a smaller CSV.")
+        st.error("File is too large. Please upload a smaller file.")
         return
 
     # Reset run lock when a different file is uploaded
@@ -354,52 +363,89 @@ def page_batch(payload: dict) -> None:
             "batch_text_col",
             "batch_zip",
             "batch_eval_metrics",
+            "batch_ingest_report",
         ):
             st.session_state.pop(key, None)
 
     try:
         raw = uploaded.read()
-        df = pd.read_csv(io.BytesIO(raw))
+        df, file_meta = read_tabular_bytes(raw, filename=uploaded.name)
+    except IngestError as exc:
+        st.error(str(exc))
+        return
     except Exception as exc:  # noqa: BLE001
-        st.error(f"Could not parse CSV: {exc}")
+        st.error(f"Could not parse file: {exc}")
         return
 
     if df.empty:
-        st.error("The uploaded CSV has no rows.")
+        st.error("The uploaded file has no rows.")
         return
 
-    preferred = ["review", "text", "reviews", "comment", "comments"]
+    detected = detect_column_map(df)
     cols = list(df.columns)
-    default_idx = 0
-    for name in preferred:
-        matches = [i for i, c in enumerate(cols) if str(c).strip().lower() == name]
-        if matches:
-            default_idx = matches[0]
-            break
+    text_default = cols.index(detected.text) if detected.text in cols else 0
+    label_options = ["(none — predict only)"] + cols
+    label_default = 0
+    if detected.label and detected.label in cols:
+        label_default = label_options.index(detected.label)
 
     run_disabled = bool(
         st.session_state.get("batch_run_disabled")
         or st.session_state.get("batch_pending")
     )
     text_col = st.selectbox(
-        "Text column (must be the review text, not id/language/category)",
+        "Text column (review body)",
         options=cols,
-        index=default_idx,
+        index=text_default,
         disabled=run_disabled,
         key="batch_text_col_select",
     )
-    # Keep chosen column for the pending run across the disable/rerun cycle
-    if not run_disabled:
-        st.session_state["batch_selected_text_col"] = text_col
-    text_col = st.session_state.get("batch_selected_text_col", text_col)
+    label_choice = st.selectbox(
+        "Optional gold label column (for evaluation only)",
+        options=label_options,
+        index=label_default,
+        disabled=run_disabled,
+        key="batch_label_col_select",
+    )
+    label_col = None if label_choice.startswith("(none") else label_choice
 
-    sample_vals = df[text_col].astype(str).head(3).tolist()
-    st.caption("Preview of selected column: " + " | ".join(sample_vals))
-    if str(text_col).strip().lower() in {"review_id", "id", "language", "lang", "category"}:
-        st.warning(
-            f"Column `{text_col}` does not look like review text. "
-            "Choose `review` (or your text column) or every row may look negative."
+    try:
+        _, cmap, report = prepare_for_prediction(
+            df,
+            text_column=text_col,
+            label_column=label_col,
+            encoding=file_meta.get("encoding"),
+            fmt=str(file_meta.get("format", "csv")),
         )
+    except IngestError as exc:
+        st.error(str(exc))
+        return
+
+    if not run_disabled:
+        st.session_state["batch_selected_text_col"] = cmap.text
+        st.session_state["batch_selected_label_col"] = cmap.label
+        st.session_state["batch_ingest_report"] = report.to_dict()
+    text_col = st.session_state.get("batch_selected_text_col", cmap.text)
+
+    with st.expander("Ingest check (format / columns)", expanded=True):
+        st.write(
+            f"**Format:** `{report.format}` · **Encoding:** `{report.encoding}` · "
+            f"**Rows:** {report.n_rows} · **Empty text:** {report.empty_text_rows}"
+        )
+        st.write(
+            f"**Text column:** `{report.text_column}`"
+            + (
+                f" · **Label column:** `{report.label_column}`"
+                if report.label_column
+                else " · **Label column:** none"
+            )
+        )
+        if report.label_counts:
+            st.write("Mapped label counts:", report.label_counts)
+        for warn in report.warnings:
+            st.warning(warn)
+        sample_vals = df[text_col].astype(str).head(3).tolist()
+        st.caption("Preview: " + " | ".join(sample_vals))
 
     if st.button(
         "Run batch prediction",
@@ -407,10 +453,10 @@ def page_batch(payload: dict) -> None:
         disabled=run_disabled,
         key="batch_run_button",
     ):
-        # Disable immediately, then rerun so the UI locks before work starts
         st.session_state["batch_run_disabled"] = True
         st.session_state["batch_pending"] = True
         st.session_state["batch_selected_text_col"] = text_col
+        st.session_state["batch_selected_label_col"] = label_col
         st.rerun()
 
     if st.session_state.get("batch_pending"):
@@ -444,6 +490,11 @@ def page_batch(payload: dict) -> None:
             st.session_state["batch_run_disabled"] = False
             st.session_state["batch_pending"] = False
             st.warning(str(exc))
+            return
+        except Exception as exc:  # noqa: BLE001
+            st.session_state["batch_run_disabled"] = False
+            st.session_state["batch_pending"] = False
+            st.error(f"Batch prediction failed: {exc}")
             return
 
     if "batch_result" not in st.session_state:
@@ -504,14 +555,14 @@ def page_batch(payload: dict) -> None:
 def page_evaluation() -> None:
     st.header("Model evaluation")
     st.info(
-        "Uploading a CSV in **Batch CSV** does **not** change the training holdout "
-        "metrics below. Those update only after you retrain (`python -m src.train` "
-        "then `python -m src.evaluate`). If your batch file has gold labels "
-        "(`gold_label` / `Sentiment` / `label`), a **Latest batch evaluation** "
-        "section appears and updates for that upload."
+        "Uploading a file in **Batch upload** does **not** change the training "
+        "holdout metrics below. Those update only after you retrain "
+        "(`python -m src.train` then `python -m src.evaluate`). If your batch "
+        "file has gold labels (`gold_label` / `Sentiment` / `label` / stars), a "
+        "**Latest batch evaluation** section appears and updates for that upload."
     )
 
-    # --- Latest batch (only shown after a labelled Batch CSV run) ---
+    # --- Latest batch (only shown after a labelled Batch upload run) ---
     batch_metrics = st.session_state.get("batch_eval_metrics")
     if batch_metrics:
         _render_metrics_block(
@@ -983,7 +1034,7 @@ def main() -> None:
             st.warning("Train and place the model artifact before predicting.")
         else:
             page_single(payload)
-    elif page == "Batch CSV":
+    elif page == "Batch upload":
         if payload is None:
             st.warning("Train and place the model artifact before batch analysis.")
         else:

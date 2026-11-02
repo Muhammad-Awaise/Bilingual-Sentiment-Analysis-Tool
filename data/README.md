@@ -13,12 +13,23 @@
 ## Primary dataset
 
 - **File:** `raw/bilingual_product_reviews.csv`
-- **Columns:** `text`, `label`, `language`
-- **Labels:** `positive`, `negative` only (binary)
-- **Languages:** `english`, `roman_urdu`, `code_mixed`
+- **Columns:** `text`, `label`, `language` (curated seed; orgs need not match this)
+- **Labels:** `positive`, `negative`, `neutral`
+- **Languages:** `english`, `roman_urdu`, `code_mixed`, `urdu`
 - **Authorship:** Original example reviews written for this repository (product-review style)
 - **License:** Same as the project MIT License for this CSV
 - **Limitation:** Small size — suitable for demonstrating the pipeline and linguistic probes, **not** for claiming large-scale generalization
+
+## Org file formats (flexible ingest)
+
+Training and batch prediction go through `src/ingest.py`:
+
+- **Files:** CSV, TSV, Excel (`.xlsx`), JSON / JSONL
+- **Text aliases:** `text`, `review`, `Reviews`, `comment`, `review_body`, …
+- **Label aliases:** `label`, `sentiment`, `Sentiments`, `star_rating`, `rating`, …
+- **Stars:** 1–2 → negative, 3 → neutral, 4–5 → positive (overrideable)
+- **Prediction:** keeps the org table; you only map the text column
+- **Training:** normalizes once to internal `text` + `label` (+ optional `language`)
 
 ## Expanded training set (build recipe)
 

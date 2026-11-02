@@ -13,30 +13,22 @@ from src.config import (
     DEFAULT_PROCESSED_CSV,
     DEFAULT_RAW_CSV,
     LABEL_COLUMN,
-    LABEL_NEGATIVE,
-    LABEL_NEUTRAL,
-    LABEL_POSITIVE,
     LANGUAGE_COLUMN,
     RANDOM_SEED,
     SUPPORTED_LABELS,
     TEST_SIZE,
     TEXT_COLUMN,
 )
+from src.ingest import (
+    IngestError,
+    prepare_for_training,
+    read_tabular_path,
+)
 from src.preprocessing import clean_text, contains_urdu_script
 
 
 class DatasetError(ValueError):
     """Raised when a dataset is missing, empty, or invalid."""
-
-
-_LABEL_ALIASES = {
-    "pos": LABEL_POSITIVE,
-    "positive": LABEL_POSITIVE,
-    "neg": LABEL_NEGATIVE,
-    "negative": LABEL_NEGATIVE,
-    "neu": LABEL_NEUTRAL,
-    "neutral": LABEL_NEUTRAL,
-}
 
 # Lightweight cues for restoring language tags on expanded corpora
 _ROMAN_URDU_CUES = frozenset(
@@ -143,72 +135,42 @@ def infer_language(text: Any) -> str:
 
 
 def normalize_label(value: Any) -> str | None:
-    """Map common label spellings to positive/negative/neutral; else None."""
-    if value is None or (isinstance(value, float) and pd.isna(value)):
-        return None
-    key = str(value).strip().lower()
-    return _LABEL_ALIASES.get(key)
+    """Map common label spellings / star ratings to positive/negative/neutral."""
+    from src.ingest import normalize_sentiment_label
+
+    return normalize_sentiment_label(value)
 
 
 def load_reviews_csv(path: str | Path | None = None) -> pd.DataFrame:
     """
-    Load a labelled CSV. Accepts either our schema (text, label[, language])
-    or common alternates (Review/Sentiment, Reviews/Sentiments).
+    Load a labelled table and normalize to text / label / language.
+
+    Accepts CSV, TSV, Excel, JSON/JSONL. Column names may be org-specific
+    (Review/Sentiment, review_body/star_rating, …) — they are mapped once
+    via ``src.ingest``.
     """
     path = Path(path) if path else DEFAULT_RAW_CSV
     if not path.exists():
         raise DatasetError(
             f"Dataset file not found: {path}. "
-            "Place bilingual_product_reviews.csv in data/raw/ or pass a valid path."
+            "Place a labelled reviews file in data/raw/ or pass a valid path."
         )
 
     try:
-        df = pd.read_csv(path, encoding="utf-8", on_bad_lines="skip")
+        raw_df, _meta = read_tabular_path(path)
+        df = prepare_for_training(
+            raw_df,
+            infer_language_fn=infer_language,
+        )
+    except IngestError as exc:
+        raise DatasetError(str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 — surface as DatasetError
-        raise DatasetError(f"Could not read CSV ({path}): {exc}") from exc
+        raise DatasetError(f"Could not read dataset ({path}): {exc}") from exc
 
     if df.empty:
         raise DatasetError(f"Dataset is empty: {path}")
 
-    df = _normalize_columns(df)
     return validate_reviews_dataframe(df)
-
-
-def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    cols = {c.lower().strip(): c for c in df.columns}
-    text_candidates = ("text", "review", "reviews", "comment", "comments")
-    label_candidates = ("label", "sentiment", "sentiments", "class")
-
-    text_col = next((cols[c] for c in text_candidates if c in cols), None)
-    label_col = next((cols[c] for c in label_candidates if c in cols), None)
-
-    if text_col is None or label_col is None:
-        raise DatasetError(
-            "CSV must contain a text column (text/review/reviews) and a "
-            f"label column (label/sentiment). Found columns: {list(df.columns)}"
-        )
-
-    out = pd.DataFrame(
-        {
-            TEXT_COLUMN: df[text_col],
-            LABEL_COLUMN: df[label_col],
-        }
-    )
-    lang_key = next((cols[c] for c in ("language", "lang") if c in cols), None)
-    if lang_key is not None:
-        out[LANGUAGE_COLUMN] = (
-            df[lang_key]
-            .map(lambda v: "unknown" if pd.isna(v) else str(v).strip().lower())
-        )
-        # Fill blank / missing language tags with a conservative heuristic
-        blank = out[LANGUAGE_COLUMN].isin({"", "nan", "none", "unknown"})
-        if blank.any():
-            out.loc[blank, LANGUAGE_COLUMN] = out.loc[blank, TEXT_COLUMN].map(
-                infer_language
-            )
-    else:
-        out[LANGUAGE_COLUMN] = out[TEXT_COLUMN].map(infer_language)
-    return out
 
 
 def validate_reviews_dataframe(df: pd.DataFrame) -> pd.DataFrame:
