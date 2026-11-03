@@ -8,14 +8,7 @@
 
 This project connects **English Linguistics** (negation, contrast, language variation, contact) with **computational methods** (feature-based ML, evaluation, error analysis).
 
-## Features
 
-- Single-review prediction (English / Roman Urdu / code-mixed)
-- Batch CSV upload with downloadable results
-- Sentiment distribution charts
-- Held-out evaluation metrics and confusion matrix
-- Research notes for non-specialist readers
-- No paid APIs, no GPU, no LLM required for predictions
 
 ## Architecture
 
