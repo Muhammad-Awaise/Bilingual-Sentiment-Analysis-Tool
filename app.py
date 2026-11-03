@@ -1211,7 +1211,15 @@ label. A miss is evidence for the research question, not something to hide.
 | Intensification | *bohat*, *very*, *بہت* | Keep intensifiers; light intensity markers |
 | Responsible science | Skewed / multi-source data | Baseline, macro F1, PR-AUC, probe report |
 
-
+#### Suggested oral narrative (60–90 seconds)
+1. State the research question (negation, code-switching, spelling, **and Urdu script**
+   on bilingual product reviews).
+2. Explain why deleting *nahi* / *lekin* — or stripping Arabic letters — would be
+   linguistically wrong (and caused empty-vector collapse historically).
+3. Describe word+char TF-IDF, LinearSVC, large expanded data, and leakage controls.
+4. Show a probe (e.g. *acha hai lekin quality kharab* or an Urdu positive) and how
+   evaluation stays honest; note org files map via ingest without forcing our schema.
+5. End with limits: labels ≠ emotions; n-grams ≠ discourse understanding.
 """
         )
 
