@@ -1186,7 +1186,13 @@ label. A miss is evidence for the research question, not something to hide.
 - Surface failures on negation / contrast / spelling / script probes
 - Report per-language and baseline-aware metrics
 
-
+#### Cannot
+- Reliably model sarcasm, irony, or long discourse structure
+- Guarantee every informal spelling or every unseen Nastaliq phrasing
+- Recover true speaker emotion or intent
+- Replace human annotation guidelines for Neutral / mixed cases
+- Invent Neutral gold labels inside binary-only external CSVs
+- Turn high holdout scores into a claim of “understanding meaning”
 
 **Interpretive limit:** model output is a **label**, not ground-truth meaning.
 """
