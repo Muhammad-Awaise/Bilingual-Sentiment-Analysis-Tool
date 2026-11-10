@@ -47,7 +47,9 @@ from src.predict import (
 from src.ui import (
     inject_base_css,
     loading_placeholder,
+    metric_row,
     page_header,
+    shimmer_metrics,
 )
 
 st.set_page_config(
@@ -877,16 +879,126 @@ def page_evaluation() -> None:
 
 
 def page_research() -> None:
+    """Sibling-style Research Center + About brief layout for this project's notes."""
     page_header(
-        "Research notes",
-        "Graduate-admissions-oriented notes linking English Linguistics "
-        "(negation, contrast, variation, contact) to a transparent CPU-only NLP pipeline.",
+        "Research Center",
+        "Local research workspace: linguistic framing, methodology, probes, and "
+        "repository evidence — CPU-only, no paid APIs.",
     )
 
     st.markdown(
         """
-### Research question
+**Purpose of this page**
 
+Keep the scientific side of the project organized in one place — without paid tools:
+
+| Tab | What it’s for |
+|---|---|
+| **Overview** | Research question, label meaning, bilingual / script motivation |
+| **Linguistics** | Negation, contrast, spelling, code-switching, intensifiers |
+| **Methodology** | Pipeline, keep/drop decisions, data honesty, evaluation design |
+| **Evidence** | Probe fixtures, limits, interview map, docs & reports |
+
+This is **documentation + evidence**, not the predictor itself. Use **Single review** /
+**Batch upload** for inference; use **Evaluation** for held-out metrics.
+"""
+    )
+
+    skel = st.empty()
+    with skel.container():
+        shimmer_metrics(4)
+    with st.spinner("Loading research snapshot…"):
+        metrics = _load_metrics() or {}
+        payload = st.session_state.get("_model_payload") or {}
+        train_meta: dict = {}
+        meta_path = REPORTS_DIR / "train_meta.json"
+        if meta_path.exists():
+            try:
+                train_meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                train_meta = {}
+    skel.empty()
+
+    st.markdown(
+        """
+<div style="padding:1.25rem 1.5rem;border-radius:16px;color:#fff;
+background:linear-gradient(135deg,#071526 0%,#0b1f3a 50%,#1e4fd6 140%);margin-bottom:1rem;">
+  <div style="font-size:0.75rem;letter-spacing:0.18em;text-transform:uppercase;opacity:0.85;">
+    Detailed research brief
+  </div>
+  <div style="font-size:1.75rem;font-weight:700;margin-top:0.35rem;">
+    Bilingual Product-Review Sentiment Analyzer
+  </div>
+  <p style="margin:0.65rem 0 0;max-width:48rem;opacity:0.92;line-height:1.55;">
+    A free, local research tool for English · Roman Urdu · code-mixed · Urdu-script
+    product reviews — with transparent n-gram features, leakage-aware evaluation,
+    and linguistic probes. No paid APIs required.
+  </p>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    acc = metrics.get("accuracy")
+    f1 = metrics.get("f1_macro")
+    metric_row(
+        [
+            (
+                "Test accuracy",
+                f"{float(acc):.3f}" if isinstance(acc, (int, float)) else "n/a",
+            ),
+            (
+                "Macro F1",
+                f"{float(f1):.3f}" if isinstance(f1, (int, float)) else "n/a",
+            ),
+            (
+                "Train rows",
+                f"{int(payload.get('train_size') or train_meta.get('n_records') or 0):,}"
+                if (payload.get("train_size") or train_meta.get("n_records"))
+                else "n/a",
+            ),
+            (
+                "Active model",
+                payload.get("model_name") or "Train artifact to load",
+            ),
+        ]
+    )
+
+    k1, k2, k3, k4 = st.columns(4)
+    k1.info("**Domain**\n\nBilingual product-review sentiment")
+    k2.info("**Core task**\n\nPositive · negative · neutral classification")
+    k3.info("**Output**\n\nLabels · scores · batch export · metrics")
+    k4.info("**Constraint**\n\nFree · local · CPU · no paid APIs")
+
+    c1, c2 = st.columns(2)
+    lang_counts = payload.get("language_counts_full") or train_meta.get(
+        "language_distribution"
+    ) or {}
+    urdu_n = int(lang_counts.get("urdu") or 0)
+    c1.info(
+        f"**Active model**\n\n{payload.get('model_name') or '—'} · "
+        f"train size {int(payload.get('train_size') or 0):,}"
+    )
+    if isinstance(f1, (int, float)):
+        c2.success(f"**Best held-out Macro F1**\n\n{float(f1):.3f}")
+    else:
+        c2.warning("**Best held-out Macro F1**\n\nNo evaluation metrics yet")
+    if urdu_n:
+        st.caption(f"Urdu-script rows represented in training snapshot: **{urdu_n:,}**")
+
+    st.markdown("### Contents")
+    st.caption("Open a tab below. Live metrics appear at the top when reports are present.")
+
+    tab_overview, tab_ling, tab_method, tab_evidence = st.tabs(
+        ["Overview", "Linguistics", "Methodology", "Evidence"]
+    )
+
+    with tab_overview:
+        st.subheader("Research question")
+        st.caption("What this workspace is defending in an interview or write-up.")
+        with st.container(border=True):
+            st.markdown(
+                """
 > How do **negation**, **code-switching**, **informal Roman Urdu spelling**,
 > and **Urdu-script (نستعلیق) reviews** affect sentiment classification on
 > bilingual **product reviews**?
@@ -903,11 +1015,11 @@ Nastaliq row to a constant prior — is not answering the linguistic problem.
 - **Computational methods:** word + character n-grams, linear classifiers,
   leakage-safe evaluation, flexible org-data ingest, qualitative probes
 """
-    )
+            )
 
-    with st.expander("1. What is sentiment analysis in this project?", expanded=True):
-        st.markdown(
-            """
+        with st.expander("1. What is sentiment analysis in this project?", expanded=True):
+            st.markdown(
+                """
 Sentiment analysis here is a **supervised text classification** task:
 map a review string to **positive**, **negative**, or **neutral**
 (neutral covers mixed/factual tone and, on older binary models, low-confidence cases).
@@ -929,11 +1041,11 @@ clear praise/complaint. **Urdu-script (نستعلیق)** letters are preserved i
 preprocessing so those reviews are not wiped empty. Optional external
 reference scripts may still drop Neutral when building binary-only test CSVs.
 """
-        )
+            )
 
-    with st.expander("2. Why bilingual / Roman Urdu / Urdu-script / code-mixed?", expanded=True):
-        st.markdown(
-            """
+        with st.expander("2. Why bilingual / Roman Urdu / Urdu-script / code-mixed?", expanded=True):
+            st.markdown(
+                """
 #### Four language situations in one marketplace genre
 
 | Situation | Example | Linguistic issue |
@@ -957,11 +1069,15 @@ Reviews are short, evaluative, often clause-chained (*X was fine but Y failed*).
 That makes **negation** and **contrast** unusually frequent relative to news text,
 and makes n-gram baselines a reasonable first computational setup for studying them.
 """
-        )
+            )
 
-    with st.expander("3. Negation — polarity flip (core of the research question)"):
-        st.markdown(
-            """
+    with tab_ling:
+        st.subheader("Linguistic phenomena")
+        st.caption("Core constructs the preprocessor protects and the probes stress-test.")
+
+        with st.expander("3. Negation — polarity flip (core of the research question)", expanded=True):
+            st.markdown(
+                """
 #### Linguistic idea
 Negation can reverse the polarity contribution of nearby evaluative words
 (*good* vs *not good*; *acha* vs *acha nahi*). Scope can be local
@@ -989,11 +1105,11 @@ the negation/contrast signal this research question needs. We explicitly reject
 that policy (documented in `docs/REFERENCE_ANALYSIS.md` and
 `docs/LINGUISTIC_DECISIONS.md`).
 """
-        )
+            )
 
-    with st.expander("4. Contrast — when the second clause carries the verdict"):
-        st.markdown(
-            """
+        with st.expander("4. Contrast — when the second clause carries the verdict"):
+            st.markdown(
+                """
 #### Linguistic idea
 Contrastive connectives (*but*, *lekin*, *magar*, *however*, *though*,
 *لیکن*, *مگر*) often mark that the **speaker’s final stance** is in the second
@@ -1021,11 +1137,11 @@ This is **deterministic feature engineering**, not attention, dependency parsing
 or a claim that the model understands discourse structure. It is an explicit,
 interview-defensible compromise for CPU-only n-gram models.
 """
-        )
+            )
 
-    with st.expander("5. Informal Roman Urdu spelling (orthographic variation)"):
-        st.markdown(
-            """
+        with st.expander("5. Informal Roman Urdu spelling (orthographic variation)"):
+            st.markdown(
+                """
 #### Linguistic idea
 Roman Urdu has **no single standard orthography**. Writers improvise Latin-script
 spellings for Urdu words. The same negation lemma can appear as *nahi*, *nahin*,
@@ -1045,11 +1161,11 @@ Leave other informal spellings untouched so error analysis can still show sparsi
 failures. Spelling variation remains part of the research object, not something we
 pretend does not exist.
 """
-        )
+            )
 
-    with st.expander("6. Code-switching and language contact"):
-        st.markdown(
-            """
+        with st.expander("6. Code-switching and language contact"):
+            st.markdown(
+                """
 #### Linguistic idea
 Code-switching / code-mixing is a **contact** phenomenon: speakers draw on two
 lexicons and grammars in one utterance. In reviews this often appears as:
@@ -1071,11 +1187,11 @@ held-out metrics are also reported **per language slice**, so we can discuss
 whether errors concentrate in mixed, Roman Urdu, or Urdu-script text — a
 linguistics-relevant breakdown, not only a single global accuracy number.
 """
-        )
+            )
 
-    with st.expander("7. Intensifiers and mixed / ambiguous sentiment"):
-        st.markdown(
-            """
+        with st.expander("7. Intensifiers and mixed / ambiguous sentiment"):
+            st.markdown(
+                """
 #### Intensifiers
 Forms like *bohat* / *very* / *بہت* / *بالکل* strengthen polarity
 (*bohat acha* vs *bohat bura*; *بہت اچھی* vs *بالکل بیکار*).
@@ -1089,11 +1205,21 @@ single choice. Our linguistic probes include an ambiguous case
 dissatisfaction on a key feature. Humans can disagree; the probe documents a
 **research judgment**, not absolute truth.
 """
+            )
+
+    with tab_method:
+        st.subheader("Methodology (DRAFT framing)")
+        st.warning(
+            "Draft research framing tied to the shipped CPU pipeline — not fabricated results."
+        )
+        st.caption(
+            "Fill Results / Discussion from Evaluation reports and probe runs. "
+            "This tab documents method choices, not new metrics."
         )
 
-    with st.expander("8. Computational method (transparent baseline)"):
-        st.markdown(
-            """
+        with st.expander("8. Computational method (transparent baseline)", expanded=True):
+            st.markdown(
+                """
 #### Pipeline (train = inference)
 1. `clean_text` — shared preprocessing inside the sklearn Pipeline
 2. **FeatureUnion:** word TF-IDF (1–2 grams) **+** character TF-IDF (`char_wb` 3–5)
@@ -1125,11 +1251,11 @@ UI scores are **approximate class probabilities** after sigmoid calibration
 (LinearSVC) or native LogReg probabilities. They are still not a guarantee of
 correctness and not a measure of “confidence in understanding meaning.”
 """
-        )
+            )
 
-    with st.expander("9. What we clean vs what we deliberately keep"):
-        st.markdown(
-            """
+        with st.expander("9. What we clean vs what we deliberately keep"):
+            st.markdown(
+                """
 | Action | Examples | Rationale |
 |--------|----------|-----------|
 | Lowercase | *Acha* → *acha* | Reduce Latin-script sparsity |
@@ -1146,11 +1272,11 @@ correctness and not a measure of “confidence in understanding meaning.”
 
 Full decision log: `docs/LINGUISTIC_DECISIONS.md`.
 """
-        )
+            )
 
-    with st.expander("10. Data strategy and licensing honesty"):
-        st.markdown(
-            """
+        with st.expander("10. Data strategy and licensing honesty"):
+            st.markdown(
+                """
 | Layer | Role |
 |-------|------|
 | Curated MIT CSV (`data/raw/bilingual_product_reviews.csv`) | Small, redistributable, language-tagged seed (incl. Urdu script + Neutral) |
@@ -1168,11 +1294,11 @@ Binary external files (e.g. Kaggle Roman Urdu) have **no Neutral gold labels** b
 construction — the model can still emit Neutral on mixed tone, but those CSVs
 will not show Neutral as ground truth.
 """
-        )
+            )
 
-    with st.expander("11. Evaluation design (quantitative + qualitative)"):
-        st.markdown(
-            """
+        with st.expander("11. Evaluation design (quantitative + qualitative)"):
+            st.markdown(
+                """
 #### Quantitative (held-out)
 - Stratified holdout after training
 - Report **accuracy**, **macro precision / recall / F1**, **PR-AUC (positive)**
@@ -1194,32 +1320,41 @@ Running `python -m src.linguistic_analysis` writes
 We do **not** force the classifier to pass them by hard-coding rules into the
 label. A miss is evidence for the research question, not something to hide.
 """
+            )
+
+    with tab_evidence:
+        st.subheader("Evidence & limits")
+        st.caption(
+            "Stored fixtures and repo documents — not invented citations or fabricated scores."
         )
 
-    probe_path = ROOT_DIR / "tests" / "fixtures" / "linguistic_examples.csv"
-    if probe_path.exists():
-        with st.expander("12. Linguistic probe examples (fixture table)", expanded=True):
+        probe_path = ROOT_DIR / "tests" / "fixtures" / "linguistic_examples.csv"
+        with st.container(border=True):
+            st.markdown("##### Linguistic probe examples")
             st.caption(
                 "Expected labels are linguistic annotations for analysis — "
                 "not guaranteed model outputs."
             )
-            try:
-                probe_df = pd.read_csv(probe_path, encoding="utf-8")
-                show = probe_df.rename(
-                    columns={
-                        "text": "Example",
-                        "category": "Category",
-                        "expected_sentiment": "Expected",
-                        "notes": "Notes",
-                    }
-                )
-                st.dataframe(show, use_container_width=True, hide_index=True)
-            except Exception as exc:  # noqa: BLE001
-                st.info(f"Could not load probe fixture: {exc}")
+            if probe_path.exists():
+                try:
+                    probe_df = pd.read_csv(probe_path, encoding="utf-8")
+                    show = probe_df.rename(
+                        columns={
+                            "text": "Example",
+                            "category": "Category",
+                            "expected_sentiment": "Expected",
+                            "notes": "Notes",
+                        }
+                    )
+                    st.dataframe(show, use_container_width=True, hide_index=True)
+                except Exception as exc:  # noqa: BLE001
+                    st.info(f"Could not load probe fixture: {exc}")
+            else:
+                st.info("Probe fixture not found at tests/fixtures/linguistic_examples.csv")
 
-    with st.expander("13. What the model can and cannot do"):
-        st.markdown(
-            """
+        with st.expander("13. What the model can and cannot do", expanded=True):
+            st.markdown(
+                """
 #### Can
 - Learn word/char n-gram patterns for positive / negative / neutral reviews
 - Score English, Roman Urdu, code-mixed, and Urdu-script text offline on CPU
@@ -1238,11 +1373,11 @@ label. A miss is evidence for the research question, not something to hide.
 
 **Interpretive limit:** model output is a **label**, not ground-truth meaning.
 """
-        )
+            )
 
-    with st.expander("14. Linguistics ↔ computation map (interview cheat-sheet)"):
-        st.markdown(
-            """
+        with st.expander("14. Linguistics ↔ computation map (interview cheat-sheet)"):
+            st.markdown(
+                """
 | Linguistics focus | What we observe in reviews | What the code does |
 |-------------------|----------------------------|--------------------|
 | Negation / polarity | *not*, *nahi*, *نہیں*, *no complaints* | Preserve cues; probe minimal pairs |
@@ -1263,11 +1398,11 @@ label. A miss is evidence for the research question, not something to hide.
    evaluation stays honest; note org files map via ingest without forcing our schema.
 5. End with limits: labels ≠ emotions; n-grams ≠ discourse understanding.
 """
-        )
+            )
 
-    with st.expander("15. Where to read more in this repository"):
-        st.markdown(
-            """
+        with st.expander("15. Where to read more in this repository"):
+            st.markdown(
+                """
 | Document | Contents |
 |----------|----------|
 | `docs/LINGUISTIC_DECISIONS.md` | Why we keep negation/contrast; spelling map; Urdu letters |
@@ -1280,7 +1415,35 @@ label. A miss is evidence for the research question, not something to hide.
 | `data/README.md` | Expanded dataset build / org ingest / licensing notes |
 | `src/ingest.py` | Flexible CSV / Excel / JSON column mapping for orgs |
 """
-        )
+            )
+
+        st.divider()
+        st.markdown("##### Local report files")
+        st.caption("Download stored Markdown reports when present (same honesty rule as sibling exports).")
+        report_files = [
+            ("Evaluation report", REPORTS_DIR / "evaluation_report.md"),
+            ("Linguistic error analysis", REPORTS_DIR / "linguistic_error_analysis.md"),
+            ("Model comparison", REPORTS_DIR / "model_comparison.md"),
+            ("Ablation results", REPORTS_DIR / "ablation_results.md"),
+            ("Daraz external report", REPORTS_DIR / "daraz_external_report.md"),
+        ]
+        for label, path in report_files:
+            if path.exists():
+                st.download_button(
+                    f"Download {label}",
+                    data=path.read_text(encoding="utf-8"),
+                    file_name=path.name,
+                    mime="text/markdown",
+                    key=f"research_dl_{path.name}",
+                )
+            else:
+                st.caption(f"{label}: not generated yet (`{path.name}`)")
+
+    st.divider()
+    st.caption(
+        "Research Center = linguistic framing, methodology draft, probes, and repo evidence. "
+        "Evaluation = quantitative held-out metrics. Predictor pages = inference only."
+    )
 
 
 def main() -> None:
