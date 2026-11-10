@@ -220,4 +220,20 @@ placeholder.empty()
 
 ---
 
-*Notes only — no UI code was ported into the bilingual app in this step. Implement when ready (Agent mode).*
+## 8. Implementation status (this repo)
+
+Ported into the bilingual app:
+
+| Item | Location |
+|------|----------|
+| Light theme (forced) | `.streamlit/config.toml` — same colors as sibling (`base=light`, white / `#f5f7fb` / `#071526` / `#1e4fd6`) |
+| Shared UI helpers | `src/ui.py` (`inject_base_css`, `page_header`, `shimmer_*`, `loading_placeholder`) |
+| CSS inject on startup | `app.py` (after `set_page_config`) + light-surface overrides in CSS |
+| Single review shimmer | around `predict_one` |
+| Batch shimmer | around `predict_dataframe` / export zip |
+| Evaluation shimmer | around metrics + optional Daraz/ablation JSON load |
+| Page headers | Single / Batch / Evaluation / Research use `page_header` |
+
+Functionality (predict, ingest, eval panels, downloads) is unchanged — theme/shimmer are presentation only.
+
+**Restart Streamlit** after theme changes (`config.toml` is read at process start).

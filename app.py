@@ -44,20 +44,19 @@ from src.predict import (
     predict_one,
     sentiment_summary,
 )
+from src.ui import (
+    inject_base_css,
+    loading_placeholder,
+    page_header,
+)
 
 st.set_page_config(
     page_title="Bilingual Sentiment Analyzer",
     page_icon="📊",
     layout="wide",
+    initial_sidebar_state="expanded",
 )
-
-
-_NAV_PAGES = (
-    "Single review",
-    "Batch upload",
-    "Evaluation",
-    "Research",
-)
+inject_base_css()
 
 
 def _load_metrics():
@@ -210,27 +209,16 @@ def _cached_model(path_str: str, mtime_ns: int, size: int):
     return load_model(path_str)
 
 
-def sidebar_status() -> dict | None:
-    st.sidebar.title("Bilingual Sentiment Analyzer")
+def sidebar_model_status() -> dict | None:
+    """Model block below native page nav (sibling multipage sidebar pattern)."""
+    st.sidebar.divider()
     st.sidebar.caption("English · Roman Urdu · Code-mixed · Urdu-script reviews")
-
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Navigate")
-    st.session_state.setdefault("nav_page", _NAV_PAGES[0])
-    st.sidebar.radio(
-        "Page",
-        options=list(_NAV_PAGES),
-        key="nav_page",
-        label_visibility="collapsed",
-    )
-
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Model")
+    st.sidebar.markdown("### Model")
     artifact = MODEL_ARTIFACT_PATH
     if not artifact.exists():
         st.sidebar.error(
             "Model artifact missing. Train locally with:\n\n"
-            "`python -m src.train`\n\nthen `python -m src.evaluate`"
+            "python -m src.train\n\nthen python -m src.evaluate"
         )
         return None
     try:
@@ -251,35 +239,67 @@ def sidebar_status() -> dict | None:
         st.sidebar.error(
             "Stale model artifact detected. "
             "Urdu-script predictions will be wrong. "
-            "Pull latest `models/sentiment_pipeline.joblib`, then click Reload."
+            "Pull latest models/sentiment_pipeline.joblib, then click Reload."
         )
-        if st.sidebar.button("Reload model cache", type="primary"):
+        if st.sidebar.button("Reload model cache", type="primary", use_container_width=True):
             _cached_model.clear()
             st.rerun()
         return None
 
     st.sidebar.success("Model loaded (CPU, offline)")
     st.sidebar.write(f"**Model:** {payload.get('model_name', 'unknown')}")
-    st.sidebar.write(f"**Train size:** {train_size}")
-    st.sidebar.write(f"**Urdu-script rows in train:** {urdu_n}")
-    st.sidebar.caption(f"Artifact: `{artifact.name}` · {stat.st_size // 1024} KB")
-    if st.sidebar.button("Reload model cache"):
+    st.sidebar.write(f"**Train size:** {train_size:,}")
+    st.sidebar.write(f"**Urdu-script rows in train:** {urdu_n:,}")
+    st.sidebar.caption(f"Artifact: {artifact.name} · {stat.st_size // 1024} KB")
+    if st.sidebar.button("Reload model cache", type="primary", use_container_width=True):
         _cached_model.clear()
         st.rerun()
+
+    # Plain text — st.metric in narrow sidebar columns truncates to "0...."
     metrics = _load_metrics()
     if metrics:
-        st.sidebar.write(f"**Test accuracy:** {metrics.get('accuracy', 0):.3f}")
-        st.sidebar.write(f"**Macro F1:** {metrics.get('f1_macro', 0):.3f}")
+        st.sidebar.write(f"**Test accuracy:** {float(metrics.get('accuracy', 0)):.3f}")
+        st.sidebar.write(f"**Macro F1:** {float(metrics.get('f1_macro', 0)):.3f}")
     return payload
 
 
+def _require_model() -> dict | None:
+    payload = st.session_state.get("_model_payload")
+    if payload is None:
+        st.warning("Train and place the model artifact before predicting.")
+    return payload
+
+
+def _page_single_review() -> None:
+    payload = _require_model()
+    if payload is not None:
+        page_single(payload)
+
+
+def _page_batch_upload() -> None:
+    payload = _require_model()
+    if payload is not None:
+        page_batch(payload)
+
+
+def _page_evaluation() -> None:
+    page_evaluation()
+
+
+def _page_research() -> None:
+    page_research()
+
+
 def page_single(payload: dict) -> None:
-    st.header("Single review prediction")
+    page_header(
+        "Single review prediction",
+        "English · Roman Urdu · Urdu-script · code-mixed product reviews. "
+        "Labels are positive / negative / neutral — heuristic classifications, "
+        "not readings of human intent.",
+    )
     st.write(
-        "Enter an English, Roman Urdu, Urdu-script, or code-mixed product review. "
-        "Labels are **positive**, **negative**, or **neutral**, driven by polarity "
-        "cues and word intensity (e.g. *bilkul bekaar* / *بہت اچھی*). "
-        "Predictions are heuristic classifications, not definitive readings of intent."
+        "Enter a review. Predictions use polarity cues and word intensity "
+        "(e.g. *bilkul bekaar* / *بہت اچھی*)."
     )
     text = st.text_area(
         "Review text",
@@ -290,11 +310,13 @@ def page_single(payload: dict) -> None:
 
     if st.button("Analyze sentiment", type="primary"):
         try:
-            result = predict_one(text, payload=payload)
+            with loading_placeholder(
+                metrics=0, blocks=1, spinner="Analyzing sentiment…"
+            ):
+                result = predict_one(text, payload=payload)
+                csv_bytes = dataframe_to_csv_bytes(format_single_result_csv(result))
             st.session_state["single_result"] = result
-            st.session_state["single_result_csv"] = dataframe_to_csv_bytes(
-                format_single_result_csv(result)
-            )
+            st.session_state["single_result_csv"] = csv_bytes
             # Rerun so download widgets are not created on the Analyze click
             # (helps avoid IDM auto-intercept). Downloads still show automatically.
             st.rerun()
@@ -363,12 +385,15 @@ def page_single(payload: dict) -> None:
 
 
 def page_batch(payload: dict) -> None:
-    st.header("Batch review analysis")
+    page_header(
+        "Batch review analysis",
+        "Upload any org table (CSV / TSV / Excel / JSON). Map columns below — "
+        f"max {MAX_BATCH_ROWS} rows / {MAX_UPLOAD_BYTES // (1024 * 1024)} MB. "
+        "Files are data only, never executed.",
+    )
     st.write(
-        "Upload **any org table** with a review-text column "
-        "(CSV / TSV / Excel / JSON). Column names do not need to match our "
-        "curated schema — map them below. Files are data only, never executed. "
-        f"Max {MAX_BATCH_ROWS} rows / {MAX_UPLOAD_BYTES // (1024 * 1024)} MB."
+        "Column names do not need to match our curated schema. "
+        "Prediction-only and labelled evaluation uploads are both supported."
     )
     uploaded = st.file_uploader(
         "Data file",
@@ -504,9 +529,12 @@ def page_batch(payload: dict) -> None:
                 raise PredictionError(
                     f"Too many rows ({len(df)}). Maximum is {MAX_BATCH_ROWS}."
                 )
-            with st.spinner("Running batch prediction…"):
+            with loading_placeholder(
+                metrics=0, blocks=2, spinner="Running batch prediction…"
+            ):
                 result = predict_dataframe(df, selected, payload=payload)
                 _, meta = build_results_zip(result, selected)
+                batch_eval = _metrics_from_batch_result(result)
             st.session_state["batch_result"] = result
             st.session_state["batch_text_col"] = selected
             st.session_state.pop("batch_zip", None)
@@ -517,7 +545,6 @@ def page_batch(payload: dict) -> None:
             }
             st.session_state["batch_formatted"] = meta["formatted_df"]
             st.session_state["batch_summary"] = meta["summary_df"]
-            batch_eval = _metrics_from_batch_result(result)
             if batch_eval is not None:
                 st.session_state["batch_eval_metrics"] = batch_eval
             else:
@@ -591,7 +618,11 @@ def page_batch(payload: dict) -> None:
 
 
 def page_evaluation() -> None:
-    st.header("Model evaluation")
+    page_header(
+        "Model evaluation",
+        "Held-out training metrics, optional latest batch evaluation, "
+        "calibration / challenge / Daraz / ablation panels when reports exist.",
+    )
     st.info(
         "Uploading a file in **Batch upload** does **not** change the training "
         "holdout metrics below. Those update only after you retrain "
@@ -614,7 +645,26 @@ def page_evaluation() -> None:
         st.divider()
 
     # --- Training holdout (static until retrain) ---
-    metrics = _load_metrics()
+    with loading_placeholder(
+        metrics=4, blocks=2, spinner="Loading evaluation report…"
+    ):
+        metrics = _load_metrics()
+        # Touch optional side reports so heavy JSON reads happen under shimmer
+        daraz_raw = None
+        ablation_raw = None
+        daraz_path = REPORTS_DIR / "daraz_external_metrics.json"
+        ablation_path = REPORTS_DIR / "ablation_results.json"
+        if daraz_path.exists():
+            try:
+                daraz_raw = json.loads(daraz_path.read_text(encoding="utf-8"))
+            except Exception:
+                daraz_raw = None
+        if ablation_path.exists():
+            try:
+                ablation_raw = json.loads(ablation_path.read_text(encoding="utf-8"))
+            except Exception:
+                ablation_raw = None
+
     if not metrics:
         st.info(
             "No training evaluation report yet. After training, run:\n\n"
@@ -785,43 +835,35 @@ def page_evaluation() -> None:
             with st.expander("Challenge-set error examples"):
                 st.dataframe(pd.DataFrame(errs), use_container_width=True, hide_index=True)
 
-    daraz_path = REPORTS_DIR / "daraz_external_metrics.json"
-    if daraz_path.exists():
-        try:
-            daraz = json.loads(daraz_path.read_text(encoding="utf-8"))
-            st.subheader("External Daraz performance")
-            if daraz.get("usable"):
-                st.write(
-                    f"N `{daraz.get('n_samples')}` · "
-                    f"accuracy `{daraz.get('accuracy'):.4f}` · "
-                    f"macro F1 `{daraz.get('f1_macro'):.4f}`"
-                )
-                st.write("Δ vs internal holdout:", daraz.get("delta_vs_internal_holdout"))
-                for lim in daraz.get("limitations") or []:
-                    st.caption(lim)
-            else:
-                st.warning(
-                    "Daraz external eval not usable: "
-                    + "; ".join(daraz.get("limitations") or ["see report"])
-                )
-        except Exception:
-            pass
-
-    ablation_path = REPORTS_DIR / "ablation_results.json"
-    if ablation_path.exists():
-        try:
-            ablation = json.loads(ablation_path.read_text(encoding="utf-8"))
-            st.subheader("Ablation comparisons")
-            st.caption(
-                f"Seed `{ablation.get('random_seed')}` · "
-                f"rows used `{ablation.get('n_used')}` · "
-                f"subsampled `{ablation.get('subsampled')}`"
+    if daraz_raw:
+        daraz = daraz_raw
+        st.subheader("External Daraz performance")
+        if daraz.get("usable"):
+            st.write(
+                f"N `{daraz.get('n_samples')}` · "
+                f"accuracy `{daraz.get('accuracy'):.4f}` · "
+                f"macro F1 `{daraz.get('f1_macro'):.4f}`"
             )
-            rows = ablation.get("results") or []
-            if rows:
-                st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        except Exception:
-            pass
+            st.write("Δ vs internal holdout:", daraz.get("delta_vs_internal_holdout"))
+            for lim in daraz.get("limitations") or []:
+                st.caption(lim)
+        else:
+            st.warning(
+                "Daraz external eval not usable: "
+                + "; ".join(daraz.get("limitations") or ["see report"])
+            )
+
+    if ablation_raw:
+        ablation = ablation_raw
+        st.subheader("Ablation comparisons")
+        st.caption(
+            f"Seed `{ablation.get('random_seed')}` · "
+            f"rows used `{ablation.get('n_used')}` · "
+            f"subsampled `{ablation.get('subsampled')}`"
+        )
+        rows = ablation.get("results") or []
+        if rows:
+            st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     from src.reproducibility import stale_artifact_report
 
@@ -835,10 +877,10 @@ def page_evaluation() -> None:
 
 
 def page_research() -> None:
-    st.header("Research notes")
-    st.caption(
+    page_header(
+        "Research notes",
         "Graduate-admissions-oriented notes linking English Linguistics "
-        "(negation, contrast, variation, contact) to a transparent CPU-only NLP pipeline."
+        "(negation, contrast, variation, contact) to a transparent CPU-only NLP pipeline.",
     )
 
     st.markdown(
@@ -1242,23 +1284,20 @@ label. A miss is evidence for the research question, not something to hide.
 
 
 def main() -> None:
-    payload = sidebar_status()
-    page = st.session_state.get("nav_page", _NAV_PAGES[0])
-
-    if page == "Single review":
-        if payload is None:
-            st.warning("Train and place the model artifact before predicting.")
-        else:
-            page_single(payload)
-    elif page == "Batch upload":
-        if payload is None:
-            st.warning("Train and place the model artifact before batch analysis.")
-        else:
-            page_batch(payload)
-    elif page == "Evaluation":
-        page_evaluation()
-    else:
-        page_research()
+    # Sibling-style page list in the sidebar (not radio buttons).
+    nav_pages = [
+        st.Page(_page_single_review, title="Single review", default=True),
+        st.Page(_page_batch_upload, title="Batch upload"),
+        st.Page(_page_evaluation, title="Evaluation"),
+        st.Page(_page_research, title="Research"),
+    ]
+    try:
+        pg = st.navigation(nav_pages, position="sidebar", expanded=True)
+    except TypeError:
+        # Older Streamlit without the expanded kwarg
+        pg = st.navigation(nav_pages, position="sidebar")
+    st.session_state["_model_payload"] = sidebar_model_status()
+    pg.run()
 
     st.markdown("---")
     st.caption(f"Project root: `{ROOT_DIR.name}` · Artifact: `{MODEL_ARTIFACT_PATH.name}`")

@@ -1,0 +1,22 @@
+# Match sibling: Urdu-English Code-Switching Analyzer (light research UI)
+[theme]
+base = "light"
+primaryColor = "#1e4fd6"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f7fb"
+textColor = "#071526"
+font = "sans serif"
+
+[theme.sidebar]
+backgroundColor = "#f5f7fb"
+secondaryBackgroundColor = "#ffffff"
+primaryColor = "#1e4fd6"
+textColor = "#071526"
+
+[server]
+headless = true
+enableCORS = false
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
