@@ -25,7 +25,12 @@ __all__ = [
 
 
 def inject_base_css() -> None:
-    """Inject sibling-style layout + shimmer CSS; leave widgets to the light theme."""
+    """Inject sibling-style layout, shimmer, and toolbar chrome hiding.
+
+    Same approach as sibling ``streamlit_lib/ui.py``: hide Share / star / edit /
+    GitHub / ⋮ / Deploy via data-testid + attribute fallbacks, keep the sidebar
+    collapse control usable, and soft-mask residual top-right chips.
+    """
     st.markdown(
         """
         <style>
@@ -56,6 +61,65 @@ def inject_base_css() -> None:
 
           hr { border-color: #e2e8f0; }
 
+          /* --- Hide Cloud / app toolbar chrome (Share, star, edit, GitHub, ⋮, Deploy) --- */
+          #MainMenu,
+          footer,
+          div[data-testid="stDecoration"],
+          div[data-testid="stStatusWidget"],
+          div[data-testid="stToolbar"],
+          div[data-testid="stAppToolbar"],
+          .stDeployButton,
+          [data-testid="stAppDeployButton"],
+          [data-testid="stToolbarActionButtonShare"],
+          [data-testid="stToolbarActionButtonFavorite"],
+          [data-testid="stToolbarActionButtonStar"],
+          [data-testid="stToolbarActionButtonRename"],
+          [data-testid="stToolbarActionButtonEdit"],
+          [data-testid="stToolbarActionButtonGithub"],
+          [data-testid="stToolbarActionButtonGitHub"],
+          [data-testid^="stToolbarActionButton"] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            height: 0 !important;
+            width: 0 !important;
+            min-width: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+          }
+
+          /* Attribute / label fallbacks when testids differ by Streamlit version.
+             Avoid blanketing all header buttons — sidebar collapse lives in header too. */
+          header a[href*="github.com"],
+          header a[href*="share.streamlit"],
+          header [aria-label="Share"],
+          header [aria-label="Share this app"],
+          header [aria-label="Favorite"],
+          header [aria-label="Star"],
+          header [aria-label="Edit"],
+          header [aria-label="Rename"],
+          header [aria-label="GitHub"],
+          header [aria-label="Source on GitHub"],
+          header [title="Share"],
+          header [title="GitHub"] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          /* Soft mask over top-right if any residual Cloud chips remain inside the app */
+          .bsa-toolbar-mask {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: min(320px, 42vw);
+            height: 3.25rem;
+            z-index: 1000000;
+            background: #ffffff;
+            pointer-events: auto;
+          }
+
           /* Shimmer — sibling recipe (bsa- prefix) */
           @keyframes bsa-shimmer {
             0% { background-position: -400px 0; }
@@ -79,6 +143,7 @@ def inject_base_css() -> None:
           .bsa-shimmer-line.sm { width: 35%; }
           .bsa-shimmer-line.md { width: 75%; }
         </style>
+        <div class="bsa-toolbar-mask" aria-hidden="true"></div>
         """,
         unsafe_allow_html=True,
     )

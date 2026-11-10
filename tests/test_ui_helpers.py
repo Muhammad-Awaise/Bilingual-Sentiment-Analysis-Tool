@@ -34,6 +34,10 @@ def test_ui_css_uses_bsa_prefix():
     # No blanket sidebar color / button overrides (sibling leaves widgets to theme)
     assert 'stSidebar"] *' not in text
     assert "baseButton-primary" not in text
+    # Sibling-style toolbar chrome hiding
+    assert 'data-testid="stToolbar"' in text
+    assert "bsa-toolbar-mask" in text
+    assert 'data-testid^="stToolbarActionButton"' in text
 
 
 def test_streamlit_theme_is_light():
@@ -45,3 +49,4 @@ def test_streamlit_theme_is_light():
     assert 'primaryColor = "#1e4fd6"' in cfg
     assert 'secondaryBackgroundColor = "#f5f7fb"' in cfg
     assert "[theme.sidebar]" in cfg
+    assert 'toolbarMode = "minimal"' in cfg

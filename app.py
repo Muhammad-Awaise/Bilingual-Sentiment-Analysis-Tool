@@ -57,6 +57,8 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
+    # Empty menu items so toolbarMode=minimal can hide the ⋮ control (sibling).
+    menu_items={"Get Help": None, "Report a bug": None, "About": None},
 )
 inject_base_css()
 

@@ -20,3 +20,10 @@ maxUploadSize = 200
 
 [browser]
 gatherUsageStats = false
+
+# Reduce top-right app chrome for viewers (same as sibling).
+# "minimal" keeps only Cloud-injected / set_page_config menu items;
+# if none remain, the ⋮ menu hides. Does not remove Streamlit Community
+# Cloud host controls outside the app iframe (CSS + mask cover those).
+[client]
+toolbarMode = "minimal"
