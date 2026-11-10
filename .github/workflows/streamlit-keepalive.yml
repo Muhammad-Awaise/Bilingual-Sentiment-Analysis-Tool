@@ -1,18 +1,19 @@
-# Separate from CI: pings Streamlit Community Cloud so the free app
-# is less likely to hibernate after ~12h without traffic.
+# Keep Streamlit Community Cloud from hibernating after ~12h without traffic.
 #
-# Notes:
-# - Keeps an already-awake app active; does not reliably wake a sleeping app.
-# - If the app is asleep, open the URL once and click "Yes, get this app back up!"
-# - Schedule is every 8 hours (UTC) so pings stay under the 12h inactivity window.
-# - Do not use bare curl -L without a cookie jar: Streamlit often redirect-loops (curl 47).
+# Important: curl/HTTP alone is NOT enough. Streamlit serves a static HTML
+# shell for plain GETs; real activity requires a browser that runs page JS
+# and opens the app WebSocket. This workflow uses Playwright/Chromium and
+# will click "Yes, get this app back up!" if the app is already asleep.
+#
+# Schedule is every 6 hours (UTC) for margin under the ~12h sleep window
+# (GitHub cron can start late when the queue is busy).
 
 name: Streamlit keep-alive
 
 on:
   schedule:
-    # 00:00, 08:00, 16:00 UTC (~every 8 hours)
-    - cron: "0 */8 * * *"
+    # 00:00, 06:00, 12:00, 18:00 UTC
+    - cron: "0 */6 * * *"
   workflow_dispatch:
 
 concurrency:
@@ -20,82 +21,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  ping:
-    name: Ping Streamlit app
+  keep-alive:
+    name: Browser keep-alive
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: HTTP ping
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Visit Streamlit app
         env:
           APP_URL: "https://bilingual-sentiment-analysis-tool.streamlit.app/"
-          # Browser-like UA; bot UAs can get odd redirect behavior on Streamlit Cloud.
-          USER_AGENT: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        run: |
-          set -euo pipefail
-
-          echo "Pinging: ${APP_URL}"
-          echo "Time (UTC): $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-          BODY="$(mktemp)"
-          COOKIES="$(mktemp)"
-          trap 'rm -f "${BODY}" "${COOKIES}"' EXIT
-
-          # Primary: cookie jar + limited redirects (fixes Streamlit redirect loops).
-          set +e
-          HTTP_CODE="$(
-            curl -sS \
-              -c "${COOKIES}" -b "${COOKIES}" \
-              -L --max-redirs 15 \
-              --connect-timeout 20 \
-              --max-time 60 \
-              -A "${USER_AGENT}" \
-              -H "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" \
-              -o "${BODY}" \
-              -w "%{http_code}" \
-              "${APP_URL}"
-          )"
-          CURL_EC=$?
-          set -e
-
-          if [[ "${CURL_EC}" -ne 0 ]]; then
-            echo "::warning::Follow-redirects ping failed (curl exit ${CURL_EC}). Falling back to no-follow ping."
-
-            # Fallback: any reach of the host is enough for keep-alive traffic.
-            # Do not follow redirects — avoids curl error 47 (max redirects).
-            set +e
-            HTTP_CODE="$(
-              curl -sS \
-                --connect-timeout 20 \
-                --max-time 30 \
-                -A "${USER_AGENT}" \
-                -o "${BODY}" \
-                -w "%{http_code}" \
-                "${APP_URL}"
-            )"
-            CURL_EC=$?
-            set -e
-
-            if [[ "${CURL_EC}" -ne 0 ]]; then
-              echo "::error::Keep-alive ping failed (curl exit ${CURL_EC})"
-              exit "${CURL_EC}"
-            fi
-          fi
-
-          echo "HTTP status: ${HTTP_CODE}"
-          BYTES="$(wc -c < "${BODY}" | tr -d ' ')"
-          echo "Response bytes: ${BYTES}"
-
-          # 2xx / 3xx means we reached Streamlit; that is enough to count as traffic.
-          if [[ ! "${HTTP_CODE}" =~ ^[23][0-9][0-9]$ ]]; then
-            echo "::error::Unexpected HTTP status ${HTTP_CODE} from Streamlit app"
-            head -c 500 "${BODY}" || true
-            exit 1
-          fi
-
-          if grep -qiE "gone to sleep|get this app back up|app has gone to sleep" "${BODY}"; then
-            echo "::warning::App appears to be sleeping. A ping alone usually cannot wake it."
-            echo "Open ${APP_URL} in a browser and click \"Yes, get this app back up!\""
-            exit 1
-          fi
-
-          echo "Keep-alive ping completed successfully."
+          KEEPALIVE_HOLD_SECONDS: "25"
+          KEEPALIVE_NAV_TIMEOUT_MS: "60000"
+          KEEPALIVE_WAKE_TIMEOUT_MS: "180000"
+        run: python scripts/streamlit_keepalive.py
