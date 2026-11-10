@@ -883,14 +883,14 @@ def page_research() -> None:
     page_header(
         "Research Center",
         "Local research workspace: linguistic framing, methodology, probes, and "
-        "repository evidence — CPU-only, no paid APIs.",
+        "repository evidence — CPU-only, offline local models.",
     )
 
     st.markdown(
         """
 **Purpose of this page**
 
-Keep the scientific side of the project organized in one place — without paid tools:
+Keep the scientific side of the project organized in one place — local tools only:
 
 | Tab | What it’s for |
 |---|---|
@@ -932,7 +932,7 @@ background:linear-gradient(135deg,#071526 0%,#0b1f3a 50%,#1e4fd6 140%);margin-bo
   <p style="margin:0.65rem 0 0;max-width:48rem;opacity:0.92;line-height:1.55;">
     A free, local research tool for English · Roman Urdu · code-mixed · Urdu-script
     product reviews — with transparent n-gram features, leakage-aware evaluation,
-    and linguistic probes. No paid APIs required.
+    and linguistic probes. No commercial cloud APIs required.
   </p>
 </div>
 """,
@@ -968,7 +968,7 @@ background:linear-gradient(135deg,#071526 0%,#0b1f3a 50%,#1e4fd6 140%);margin-bo
     k1.info("**Domain**\n\nBilingual product-review sentiment")
     k2.info("**Core task**\n\nPositive · negative · neutral classification")
     k3.info("**Output**\n\nLabels · scores · batch export · metrics")
-    k4.info("**Constraint**\n\nFree · local · CPU · no paid APIs")
+    k4.info("**Constraint**\n\nFree · local · CPU · offline")
 
     c1, c2 = st.columns(2)
     lang_counts = payload.get("language_counts_full") or train_meta.get(
